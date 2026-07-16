@@ -47,11 +47,15 @@
 - [x] tile_size 24 -> 32 (1:1 tileset pixels, window 1280x960)
 - [x] Habitat reshaped to 3x5 to match the dome sprite (terminal is now a kiosk beside it)
 
+## Sprites round 2 (2026-07-16)
+- [x] npc_*.png robots for the five NPCs (color-matched, set in data/npcs.json)
+- [x] building_bar/shop_384.png — outpost reworked to 2 buildings + 2 plazas
+- [x] Crop growth-stage sprites + floating watermelon for ripe Gravity Melons
+- [x] All 9 wild-flora species as distinct sprites (boxes in data/wild_flora.json)
+
 ## Follow-up ideas (not started)
-- [ ] Use npc_*.png portraits/sprites for the five NPCs
-- [ ] Use building_bar/shop_384.png for the outpost buildings
-- [ ] Crop sprites from outside.png growth-stage rows (cols 12-17, rows 9-12)
-- [ ] Wild-flora sprites from outside.png teal plant row (row 13)
+- [ ] SciFiCreatures_NES_4x30_alphaBG.png — no creature system yet; could become
+      night critters or ion-storm hazards
 - [ ] Interior habitat scene instead of door-tile shelter
 - [ ] Mouse support for shop/inventory
 - [ ] Sound (ambient hum, moon chimes)

@@ -56,6 +56,7 @@ class World:
         self.height: int = m["height"]
         self.legend: dict[str, str] = m["legend"]
         self.player_start: tuple[int, int] = (m["player_start"]["x"], m["player_start"]["y"])
+        self.buildings: list[dict[str, Any]] = m.get("buildings", [])
         rows = m["rows"]
         assert len(rows) == self.height and all(len(r) == self.width for r in rows), \
             "map.json rows do not match declared dimensions"

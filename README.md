@@ -3,11 +3,13 @@
 A cozy-with-mystery 2D top-down farming/life sim on the alien planet **Veridia**: violet skies,
 twin moons, bioluminescent nights — and soil that is slowly revealed to be listening.
 
-Built with Python + [pygame-ce](https://pyga.me/) (imports as `pygame`). The player and
-environment use sprite sheets from `assets/` (`astro_spritesheet.png`, `outside.png`), loaded by
-`game/assets.py`; everything else (crops, NPCs, crystals, buildings) is still procedural shapes
-in `game/render.py` and falls back gracefully if the sheets are missing. All content and
-tunables live in JSON under `data/`.
+Built with Python + [pygame-ce](https://pyga.me/) (imports as `pygame`). Graphics come from the
+sprite sheets in `assets/` — astronaut player, environment tileset (terrain, habitat dome, crop
+stages, wild flora), robot NPC portraits, and the outpost bar/shop buildings — all loaded and
+sliced by `game/assets.py` (NPC sprites are assigned in `data/npcs.json`, flora sprite boxes in
+`data/wild_flora.json`, buildings in `data/map.json`). Crystals, most ripe crops, and effects
+remain procedural in `game/render.py`, and everything falls back to procedural shapes if the
+sheets are missing. All content and tunables live in JSON under `data/`.
 
 ## Run it
 

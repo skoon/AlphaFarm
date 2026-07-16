@@ -1,63 +1,162 @@
 {
   "sets": {
-    "meadow": { "name": "Meadow Whisperers", "unlock_seed": "echo_bloom" },
-    "crystal": { "name": "Crystalline Symbiotes", "unlock_seed": "duskcap" },
-    "spore": { "name": "Spore Drifters", "unlock_seed": null }
+    "meadow": {
+      "name": "Meadow Whisperers",
+      "unlock_seed": "echo_bloom"
+    },
+    "crystal": {
+      "name": "Crystalline Symbiotes",
+      "unlock_seed": "duskcap"
+    },
+    "spore": {
+      "name": "Spore Drifters",
+      "unlock_seed": null
+    }
   },
   "species": {
     "veil_fern": {
       "name": "Veil Fern",
       "set": "meadow",
-      "color": [110, 200, 150],
-      "entry": "Its fronds turn to face people, not the sun. It seems to be listening."
+      "color": [
+        110,
+        200,
+        150
+      ],
+      "entry": "Its fronds turn to face people, not the sun. It seems to be listening.",
+      "box": [
+        480,
+        240,
+        32,
+        32
+      ]
     },
     "glasswort": {
       "name": "Glasswort",
       "set": "meadow",
-      "color": [190, 230, 220],
-      "entry": "Translucent stems ring faintly in the wind, like distant chimes."
+      "color": [
+        190,
+        230,
+        220
+      ],
+      "entry": "Translucent stems ring faintly in the wind, like distant chimes.",
+      "box": [
+        288,
+        416,
+        32,
+        32
+      ]
     },
     "murmur_moss": {
       "name": "Murmur Moss",
       "set": "meadow",
-      "color": [90, 170, 120],
-      "entry": "Warm to the touch. The scanner picks up a slow, steady pulse beneath it."
+      "color": [
+        90,
+        170,
+        120
+      ],
+      "entry": "Warm to the touch. The scanner picks up a slow, steady pulse beneath it.",
+      "box": [
+        288,
+        448,
+        32,
+        32
+      ]
     },
     "prismvine": {
       "name": "Prismvine",
       "set": "crystal",
-      "color": [170, 210, 255],
-      "entry": "Grows only near crystal formations, splitting their glow into tiny rainbows."
+      "color": [
+        170,
+        210,
+        255
+      ],
+      "entry": "Grows only near crystal formations, splitting their glow into tiny rainbows.",
+      "box": [
+        320,
+        384,
+        32,
+        32
+      ]
     },
     "shard_lily": {
       "name": "Shard Lily",
       "set": "crystal",
-      "color": [200, 190, 255],
-      "entry": "Petals of living mineral. They realign overnight to face the great crystal."
+      "color": [
+        200,
+        190,
+        255
+      ],
+      "entry": "Petals of living mineral. They realign overnight to face the great crystal.",
+      "box": [
+        512,
+        272,
+        32,
+        34
+      ]
     },
     "lattice_bud": {
       "name": "Lattice Bud",
       "set": "crystal",
-      "color": [150, 190, 240],
-      "entry": "Its buds grow in perfect geometric lattices. Nothing on Veridia is random."
+      "color": [
+        150,
+        190,
+        240
+      ],
+      "entry": "Its buds grow in perfect geometric lattices. Nothing on Veridia is random.",
+      "box": [
+        384,
+        288,
+        32,
+        32
+      ]
     },
     "drift_puff": {
       "name": "Drift Puff",
       "set": "spore",
-      "color": [240, 200, 240],
-      "entry": "Releases spores that ride the ion winds. Farms downwind grow strangely well."
+      "color": [
+        240,
+        200,
+        240
+      ],
+      "entry": "Releases spores that ride the ion winds. Farms downwind grow strangely well.",
+      "box": [
+        416,
+        288,
+        32,
+        32
+      ]
     },
     "ember_cap": {
       "name": "Ember Cap",
       "set": "spore",
-      "color": [250, 150, 110],
-      "entry": "Glows brighter before a storm. The colonists call it the honest forecaster."
+      "color": [
+        250,
+        150,
+        110
+      ],
+      "entry": "Glows brighter before a storm. The colonists call it the honest forecaster.",
+      "box": [
+        544,
+        244,
+        32,
+        34
+      ]
     },
     "sleeper_bell": {
       "name": "Sleeper Bell",
       "set": "spore",
-      "color": [180, 160, 220],
-      "entry": "Blooms only while the twin moons are both dark. Something below dreams with it."
+      "color": [
+        180,
+        160,
+        220
+      ],
+      "entry": "Blooms only while the twin moons are both dark. Something below dreams with it.",
+      "box": [
+        544,
+        282,
+        32,
+        32
+      ]
     }
   }
 }

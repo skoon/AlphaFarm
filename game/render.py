@@ -158,9 +158,16 @@ def draw_tile(surf: pygame.Surface, tile, x: int, y: int, ts: int, t: float) -> 
         pygame.draw.polygon(surf, _lerp(col, (255, 255, 255), 0.4), pts, 1)
         return
 
-    surf.fill(TILE_COLORS[kind], rect)
     if kind == "building":
+        img = SPRITES.get("tile:path")
+        if img:
+            surf.blit(img, rect.topleft)  # building sprite is blitted by draw_buildings
+            return
+        surf.fill(TILE_COLORS[kind], rect)
         pygame.draw.rect(surf, _lerp(TILE_COLORS["building"], (0, 0, 0), 0.25), rect, 2)
+        return
+
+    surf.fill(TILE_COLORS[kind], rect)
 
 
 def draw_habitat(surf: pygame.Surface, origin: tuple[int, int] | None, ts: int) -> None:
@@ -170,11 +177,15 @@ def draw_habitat(surf: pygame.Surface, origin: tuple[int, int] | None, ts: int) 
         surf.blit(img, (origin[0] * ts, origin[1] * ts))
 
 
+def draw_buildings(surf: pygame.Surface, buildings: list[dict], ts: int) -> None:
+    """Blit building sprites anchored to the bottom of their tile footprints."""
+    for b in buildings:
+        img = SPRITES.get(f"building:{b['image']}")
+        if img:
+            surf.blit(img, (b["x"] * ts, (b["y"] + b["h"]) * ts - img.get_height()))
+
+
 def draw_crop(surf: pygame.Surface, crop, x: int, y: int, ts: int, t: float) -> None:
-    sprite = SPRITES.get(f"crop:{crop.crop_id}:{int(crop.stage_frac() * 3)}")
-    if sprite:
-        surf.blit(sprite, (x * ts, y * ts))
-        return
     cx, cy = x * ts + ts // 2, y * ts + ts // 2
     color = tuple(crop.d["color"])
     frac = crop.stage_frac()
@@ -196,6 +207,23 @@ def draw_crop(surf: pygame.Surface, crop, x: int, y: int, ts: int, t: float) -> 
             pygame.draw.line(surf, color, (bulge.centerx - 4, bulge.centery),
                              (bulge.centerx + 4, bulge.centery), 2)
         return
+
+    if not crop.ripe:
+        img = SPRITES.get(f"crop_stage:{min(int(frac * 3), 2)}")
+        if img:
+            surf.blit(img, img.get_rect(midbottom=(cx, y * ts + ts - 2)))
+            return
+    else:
+        img = SPRITES.get(f"crop_ripe:{crop.crop_id}")
+        if img:
+            bottom = y * ts + ts - 2
+            if "floats" in traits:
+                shadow = pygame.Rect(0, 0, ts // 2, ts // 5)
+                shadow.center = (cx, y * ts + ts - ts // 6)
+                pygame.draw.ellipse(surf, (40, 30, 45), shadow)
+                bottom += int(-ts // 4 + math.sin(t * 2.2 + x * 1.7) * 2)
+            surf.blit(img, img.get_rect(midbottom=(cx, bottom)))
+            return
 
     if frac < 0.34:  # sprout
         stem = _lerp(color, (30, 60, 40), 0.5)
@@ -243,7 +271,7 @@ def draw_crop(surf: pygame.Surface, crop, x: int, y: int, ts: int, t: float) -> 
 def draw_wild_plant(surf: pygame.Surface, species: dict, x: int, y: int, ts: int, t: float) -> None:
     sprite = SPRITES.get(f"flora:{species['name']}")
     if sprite:
-        surf.blit(sprite, (x * ts, y * ts))
+        surf.blit(sprite, sprite.get_rect(midbottom=(x * ts + ts // 2, y * ts + ts - 1)))
         return
     cx, cy = x * ts + ts // 2, y * ts + ts // 2
     color = tuple(species["color"])
@@ -280,7 +308,7 @@ def draw_npc(surf: pygame.Surface, npc, ts: int) -> None:
     sprite = SPRITES.get(f"npc:{npc.id}")
     px, py = int(npc.x * ts + ts // 2), int(npc.y * ts + ts // 2)
     if sprite:
-        surf.blit(sprite, (px - ts // 2, py - ts // 2))
+        surf.blit(sprite, sprite.get_rect(midbottom=(px, int(npc.y * ts) + ts)))
         return
     color = tuple(npc.d["color"])
     body = pygame.Rect(0, 0, int(ts * 0.65), int(ts * 0.75))

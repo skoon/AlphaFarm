@@ -87,6 +87,15 @@ def test_every_npc_has_ten_dialogue_lines():
         assert total >= 10, f"{nid} has only {total} lines"
 
 
+def test_every_npc_sprite_file_exists():
+    from game.config import BASE_DIR
+    mgr = make_mgr()
+    for nid, npc in mgr.npcs.items():
+        sprite = npc.d.get("sprite")
+        assert sprite, f"{nid} has no sprite assigned"
+        assert (BASE_DIR / "assets" / sprite).exists(), f"{nid}: missing {sprite}"
+
+
 def test_npc_near_and_save_roundtrip():
     mgr = make_mgr()
     sylla = mgr.npcs["sylla"]

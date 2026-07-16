@@ -26,6 +26,20 @@ def test_map_loads_with_expected_features():
     assert not world.tile(*world.player_start).solid
 
 
+def test_buildings_sit_on_building_tiles():
+    world = make_world()
+    assert len(world.buildings) == 2
+    covered = set()
+    for b in world.buildings:
+        assert b["image"] in ("bar", "shop")
+        for dy in range(b["h"]):
+            for dx in range(b["w"]):
+                tx, ty = b["x"] + dx, b["y"] + dy
+                assert world.tile(tx, ty).kind == "building", (tx, ty)
+                covered.add((tx, ty))
+    assert covered == set(world.find_kind("building"))
+
+
 def test_till_plant_water_harvest_loop():
     world = make_world()
     moons = make_moons()

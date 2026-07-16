@@ -2,78 +2,206 @@
   "sylla": {
     "name": "Dr. Sylla Veen",
     "role": "Xenobotanist",
-    "color": [120, 220, 140],
+    "color": [
+      120,
+      220,
+      140
+    ],
     "schedule": [
-      { "hour": 6.0, "x": 32, "y": 22 },
-      { "hour": 9.0, "x": 25, "y": 14 },
-      { "hour": 15.0, "x": 32, "y": 24 },
-      { "hour": 20.0, "x": 32, "y": 22 }
+      {
+        "hour": 6.0,
+        "x": 32,
+        "y": 22
+      },
+      {
+        "hour": 9.0,
+        "x": 25,
+        "y": 14
+      },
+      {
+        "hour": 15.0,
+        "x": 32,
+        "y": 24
+      },
+      {
+        "hour": 20.0,
+        "x": 32,
+        "y": 22
+      }
     ],
     "gifts": {
-      "loved": ["prism_pod", "echo_bloom", "dream_lotus"],
-      "liked": ["lumen_berry", "whisper_wheat"],
-      "disliked": ["crimson_tuber"]
-    }
+      "loved": [
+        "prism_pod",
+        "echo_bloom",
+        "dream_lotus"
+      ],
+      "liked": [
+        "lumen_berry",
+        "whisper_wheat"
+      ],
+      "disliked": [
+        "crimson_tuber"
+      ]
+    },
+    "sprite": "npc_rigby_256.png"
   },
   "hux": {
     "name": "Foreman Hux Craddock",
     "role": "Mining Foreman",
-    "color": [210, 140, 90],
+    "color": [
+      210,
+      140,
+      90
+    ],
     "schedule": [
-      { "hour": 6.0, "x": 33, "y": 22 },
-      { "hour": 8.0, "x": 13, "y": 22 },
-      { "hour": 14.0, "x": 33, "y": 24 },
-      { "hour": 19.0, "x": 33, "y": 22 }
+      {
+        "hour": 6.0,
+        "x": 33,
+        "y": 22
+      },
+      {
+        "hour": 8.0,
+        "x": 13,
+        "y": 22
+      },
+      {
+        "hour": 14.0,
+        "x": 33,
+        "y": 24
+      },
+      {
+        "hour": 19.0,
+        "x": 33,
+        "y": 22
+      }
     ],
     "gifts": {
-      "loved": ["crimson_tuber"],
-      "liked": ["gravity_melon"],
-      "disliked": ["prism_pod"]
-    }
+      "loved": [
+        "crimson_tuber"
+      ],
+      "liked": [
+        "gravity_melon"
+      ],
+      "disliked": [
+        "prism_pod"
+      ]
+    },
+    "sprite": "npc_zara_256.png"
   },
   "tinks": {
     "name": "Merla \"Tinks\" Odrai",
     "role": "Shipwrecked Trader",
-    "color": [240, 200, 100],
+    "color": [
+      240,
+      200,
+      100
+    ],
     "schedule": [
-      { "hour": 6.0, "x": 33, "y": 25 },
-      { "hour": 9.0, "x": 31, "y": 7 },
-      { "hour": 16.0, "x": 33, "y": 25 }
+      {
+        "hour": 6.0,
+        "x": 33,
+        "y": 25
+      },
+      {
+        "hour": 9.0,
+        "x": 31,
+        "y": 7
+      },
+      {
+        "hour": 16.0,
+        "x": 33,
+        "y": 25
+      }
     ],
     "gifts": {
-      "loved": ["gravity_melon"],
-      "liked": ["prism_pod", "lumen_berry"],
-      "disliked": ["whisper_wheat"]
-    }
+      "loved": [
+        "gravity_melon"
+      ],
+      "liked": [
+        "prism_pod",
+        "lumen_berry"
+      ],
+      "disliked": [
+        "whisper_wheat"
+      ]
+    },
+    "sprite": "npc_glimmer_256.png"
   },
   "care7": {
     "name": "CARE-7",
     "role": "AI Caretaker Unit",
-    "color": [150, 200, 240],
+    "color": [
+      150,
+      200,
+      240
+    ],
     "schedule": [
-      { "hour": 6.0, "x": 32, "y": 26 },
-      { "hour": 10.0, "x": 10, "y": 8 },
-      { "hour": 16.0, "x": 32, "y": 26 }
+      {
+        "hour": 6.0,
+        "x": 32,
+        "y": 26
+      },
+      {
+        "hour": 10.0,
+        "x": 10,
+        "y": 8
+      },
+      {
+        "hour": 16.0,
+        "x": 32,
+        "y": 26
+      }
     ],
     "gifts": {
-      "loved": ["whisper_wheat"],
-      "liked": ["crimson_tuber"],
-      "disliked": ["lumen_berry"]
-    }
+      "loved": [
+        "whisper_wheat"
+      ],
+      "liked": [
+        "crimson_tuber"
+      ],
+      "disliked": [
+        "lumen_berry"
+      ]
+    },
+    "sprite": "npc_nova_256.png"
   },
   "juno": {
     "name": "Juno Pell",
     "role": "Comms Technician",
-    "color": [230, 150, 210],
+    "color": [
+      230,
+      150,
+      210
+    ],
     "schedule": [
-      { "hour": 6.0, "x": 34, "y": 24 },
-      { "hour": 11.0, "x": 27, "y": 16 },
-      { "hour": 17.0, "x": 34, "y": 24 }
+      {
+        "hour": 6.0,
+        "x": 34,
+        "y": 24
+      },
+      {
+        "hour": 11.0,
+        "x": 27,
+        "y": 16
+      },
+      {
+        "hour": 17.0,
+        "x": 34,
+        "y": 24
+      }
     ],
     "gifts": {
-      "loved": ["lumen_berry"],
-      "liked": ["echo_bloom", "whisper_wheat"],
-      "disliked": ["duskcap"]
-    }
+      "loved": [
+        "lumen_berry"
+      ],
+      "liked": [
+        "echo_bloom",
+        "whisper_wheat"
+      ],
+      "disliked": [
+        "duskcap"
+      ]
+    },
+    "sprite": "npc_zoop_256.png"
   }
 }

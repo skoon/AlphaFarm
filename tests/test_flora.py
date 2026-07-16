@@ -70,6 +70,16 @@ def test_spore_set_has_no_unlock_seed():
     assert flora.unlocked_seed_crops() == []
 
 
+def test_every_species_has_a_sprite_box_inside_the_sheet():
+    flora = make_flora()
+    for sid, sp in flora.species.items():
+        box = sp.get("box")
+        assert box and len(box) == 4, f"{sid} missing sprite box"
+        x, y, w, h = box
+        assert 0 <= x and x + w <= 640, sid   # outside.png is 640x576
+        assert 0 <= y and y + h <= 576, sid
+
+
 def test_flora_save_roundtrip():
     flora = make_flora()
     flora.wild.append({"species": "glasswort", "x": 5, "y": 6})

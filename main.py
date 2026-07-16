@@ -453,6 +453,7 @@ class Game:
         for x, y, tile in self.world.iter_tiles():
             render.draw_tile(screen, tile, x, y, ts, self.t)
         render.draw_habitat(screen, self.habitat_origin, ts)
+        render.draw_buildings(screen, self.world.buildings, ts)
         for x, y, tile in self.world.iter_tiles():
             if tile.crop:
                 render.draw_crop(screen, tile.crop, x, y, ts, self.t)
