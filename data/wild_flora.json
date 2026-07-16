@@ -1,0 +1,63 @@
+{
+  "sets": {
+    "meadow": { "name": "Meadow Whisperers", "unlock_seed": "echo_bloom" },
+    "crystal": { "name": "Crystalline Symbiotes", "unlock_seed": "duskcap" },
+    "spore": { "name": "Spore Drifters", "unlock_seed": null }
+  },
+  "species": {
+    "veil_fern": {
+      "name": "Veil Fern",
+      "set": "meadow",
+      "color": [110, 200, 150],
+      "entry": "Its fronds turn to face people, not the sun. It seems to be listening."
+    },
+    "glasswort": {
+      "name": "Glasswort",
+      "set": "meadow",
+      "color": [190, 230, 220],
+      "entry": "Translucent stems ring faintly in the wind, like distant chimes."
+    },
+    "murmur_moss": {
+      "name": "Murmur Moss",
+      "set": "meadow",
+      "color": [90, 170, 120],
+      "entry": "Warm to the touch. The scanner picks up a slow, steady pulse beneath it."
+    },
+    "prismvine": {
+      "name": "Prismvine",
+      "set": "crystal",
+      "color": [170, 210, 255],
+      "entry": "Grows only near crystal formations, splitting their glow into tiny rainbows."
+    },
+    "shard_lily": {
+      "name": "Shard Lily",
+      "set": "crystal",
+      "color": [200, 190, 255],
+      "entry": "Petals of living mineral. They realign overnight to face the great crystal."
+    },
+    "lattice_bud": {
+      "name": "Lattice Bud",
+      "set": "crystal",
+      "color": [150, 190, 240],
+      "entry": "Its buds grow in perfect geometric lattices. Nothing on Veridia is random."
+    },
+    "drift_puff": {
+      "name": "Drift Puff",
+      "set": "spore",
+      "color": [240, 200, 240],
+      "entry": "Releases spores that ride the ion winds. Farms downwind grow strangely well."
+    },
+    "ember_cap": {
+      "name": "Ember Cap",
+      "set": "spore",
+      "color": [250, 150, 110],
+      "entry": "Glows brighter before a storm. The colonists call it the honest forecaster."
+    },
+    "sleeper_bell": {
+      "name": "Sleeper Bell",
+      "set": "spore",
+      "color": [180, 160, 220],
+      "entry": "Blooms only while the twin moons are both dark. Something below dreams with it."
+    }
+  }
+}

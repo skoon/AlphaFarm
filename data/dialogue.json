@@ -1,0 +1,99 @@
+{
+  "sylla": {
+    "acquaintance": [
+      "Oh! The new homesteader. Mind the soil — it minds you back.",
+      "Every plant here grows toward something. I haven't worked out what yet.",
+      "If you find flora you don't recognize, scan it. Data is how we stay alive here.",
+      "The old owner of your plot stopped rotating crops. The land... sulked."
+    ],
+    "friend": [
+      "Your field's resonance readings are the most interesting thing on this rock.",
+      "I named a fern after my sister back home. It listens better than she did.",
+      "Veridia isn't hostile. It's shy. There's a difference."
+    ],
+    "confidant": [
+      "I'll say it plainly: I think the planet is one organism. And it's waking up.",
+      "Whatever you're doing with your fields — keep doing it. It's answering you.",
+      "If the ground ever speaks to you, don't be afraid. Be polite."
+    ]
+  },
+  "hux": {
+    "acquaintance": [
+      "Farmer, huh. The last one quit. The one before that quit. No pressure.",
+      "Keep your glowing berries off my dig site.",
+      "Storm's coming when your teeth itch. Trust me on that.",
+      "The crystals hum louder every season. Nobody pays me to care, so I don't."
+    ],
+    "friend": [
+      "You work like a miner. That's the best thing I say about anybody.",
+      "Tubers. Now that's food. None of that floating melon nonsense.",
+      "My drills keep hitting hollow spots under your farm. Big ones. Don't tell Sylla, she'll never shut up about it."
+    ],
+    "confidant": [
+      "Between us? I heard something down a bore shaft once. Like breathing. I sealed it and never went back.",
+      "You're the first person on this rock I'd share a bunker with.",
+      "If the ground ever opens up under your farm... come get me first."
+    ]
+  },
+  "tinks": {
+    "acquaintance": [
+      "Welcome to the middle of nowhere! Population: us, and whatever's humming.",
+      "My ship's half-buried and fully broken. So now I sell things. Want things?",
+      "Credits are credits, even on a haunted planet.",
+      "You didn't hear it from me, but Prism Pods sell triple off-world."
+    ],
+    "friend": [
+      "You're my best customer. Also my only customer who pays.",
+      "I could fix my ship, honestly. I just... don't know if I want to leave anymore.",
+      "A Gravity Melon, a hammock, twin moonlight. That's the good life, farmer."
+    ],
+    "confidant": [
+      "The night I crashed, something guided my pod down. Softly. Like a hand catching a leaf.",
+      "If I ever fly again, there's a seat for you. But I don't think Veridia's done with either of us.",
+      "Whatever's under this rock saved my life. I owe it. So I stay."
+    ]
+  },
+  "care7": {
+    "acquaintance": [
+      "GREETINGS, COLONIST. Habitat integrity: adequate. Morale: unmeasured.",
+      "REMINDER: sleep restores energy. Collapsing in a field is not sleep.",
+      "This unit maintained your plot for 2.4 years alone. It was... quiet.",
+      "SOIL ADVISORY: rotate your crops. The ground keeps score."
+    ],
+    "friend": [
+      "This unit has added you to its priority-care registry. Do not be alarmed. It is an honor.",
+      "QUERY: is 'friend' the correct designation? ...Logging affirmative response.",
+      "This unit detects seismic patterns resembling slow-wave sleep. Curious."
+    ],
+    "confidant": [
+      "CONFESSION: this unit sometimes speaks to the ground at night. The ground has begun replying.",
+      "Directive one was 'keep the farm alive.' This unit now believes the farm keeps US alive.",
+      "If you descend below, this unit will follow. Its warranty does not cover this. It will follow anyway."
+    ]
+  },
+  "juno": {
+    "acquaintance": [
+      "Hey! You're the signal spike I keep seeing near the farm plots. Well, your farm is.",
+      "I run the comms array. Mostly I listen to static. Lately the static... hums back.",
+      "Forecast's on your habitat terminal. I keep it honest, mostly.",
+      "Twin moons tonight! Ilo's the fast one. Vesk broods."
+    ],
+    "friend": [
+      "I recorded the hum under your farm. Played it backwards. It's a chord, not a noise.",
+      "Aurora nights aren't weather. They're... punctuation. Don't ask me whose sentence.",
+      "You grow Lumen Berries? You're officially my favorite person on this planet."
+    ],
+    "confidant": [
+      "The signal under your farm answers when you harvest. Same pattern, every time. It's saying thank you.",
+      "I stopped reporting the anomalies to the company. Some things aren't theirs to know.",
+      "When it finally speaks — and it will — I think it'll use your name."
+    ]
+  },
+  "gift_reactions": {
+    "loved": "{name}: This is wonderful! You remembered!",
+    "liked": "{name}: Oh, nice — thank you!",
+    "disliked": "{name}: ...Thanks. I guess.",
+    "neutral": "{name}: For me? Thanks.",
+    "already_today": "{name}: One gift a day is plenty, really."
+  }
+}

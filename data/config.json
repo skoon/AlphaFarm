@@ -1,0 +1,75 @@
+{
+  "window": {
+    "title": "AlphaFarm — Veridia",
+    "tile_size": 32,
+    "fps": 60,
+    "use_sprites": true
+  },
+  "time": {
+    "day_length_real_seconds": 600,
+    "day_start_hour": 6.0,
+    "day_end_hour": 26.0,
+    "night_start_hour": 20.0,
+    "night_full_hour": 23.0,
+    "max_night_darkness": 130
+  },
+  "player": {
+    "move_speed_tiles_per_sec": 5.5,
+    "max_energy": 100,
+    "collapse_wake_energy_fraction": 0.6,
+    "start_credits": 250,
+    "start_seeds": { "lumen_berry": 6, "whisper_wheat": 4 }
+  },
+  "energy_costs": {
+    "hoe": 2,
+    "water": 1,
+    "harvest": 1,
+    "plant": 1,
+    "scan": 1
+  },
+  "inventory": {
+    "slots": 24,
+    "max_stack": 99
+  },
+  "moons": {
+    "cycle_days": 8,
+    "full_phase_index": 4,
+    "ilo_start_phase": 2,
+    "vesk_start_phase": 4,
+    "dark_phases": [7, 0, 1]
+  },
+  "resonance": {
+    "start": 0.5,
+    "min": 0.1,
+    "max": 1.0,
+    "same_crop_penalty": 0.08,
+    "rotation_bonus": 0.06,
+    "fallow_recovery_per_day": 0.005,
+    "yield_base": 0.5
+  },
+  "events": {
+    "weights": { "none": 58, "spore_drift": 16, "ion_storm": 12, "aurora": 14 },
+    "spore_drift_tiles": 8,
+    "ion_storm_start_hour": 10.0,
+    "ion_storm_end_hour": 18.0,
+    "ion_storm_energy_drain_per_sec": 2.0,
+    "aurora_growth_multiplier": 2.0
+  },
+  "flora": {
+    "max_wild_plants": 10,
+    "daily_spawn_attempts": 3
+  },
+  "npcs": {
+    "friendship_max": 1000,
+    "points_per_heart": 100,
+    "talk_points_per_day": 10,
+    "gift_loved": 60,
+    "gift_liked": 25,
+    "gift_disliked": -25,
+    "tier_thresholds": { "acquaintance": 0, "friend": 300, "confidant": 700 },
+    "walk_speed_tiles_per_sec": 2.2
+  },
+  "debug": {
+    "time_skip_hours": 1.0
+  }
+}

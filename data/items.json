@@ -1,0 +1,11 @@
+{
+  "credits_name": "Credits",
+  "seed_suffix": " Seeds",
+  "tools": {
+    "hoe": { "name": "Terra-Hoe", "key": "1" },
+    "water": { "name": "Watering Canister", "key": "2" },
+    "harvest": { "name": "Harvester", "key": "3" },
+    "scanner": { "name": "Flora Scanner", "key": "4" },
+    "plant": { "name": "Seed Planter", "key": "5" }
+  }
+}

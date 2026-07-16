@@ -1,0 +1,101 @@
+{
+  "lumen_berry": {
+    "name": "Lumen Berry",
+    "growth_days": 3,
+    "sell_value": 35,
+    "seed_price": 20,
+    "family": "berry",
+    "color": [120, 235, 200],
+    "traits": ["glow_when_ripe"],
+    "moon_affinity": { "moon": "ilo", "growth_bonus": 0.5, "mutation_chance": 0.12 },
+    "mutation": { "name": "Aurora Lumen Berry", "value_mult": 3 },
+    "unlocked_from_start": true
+  },
+  "gravity_melon": {
+    "name": "Gravity Melon",
+    "growth_days": 7,
+    "sell_value": 110,
+    "seed_price": 55,
+    "family": "melon",
+    "color": [180, 130, 250],
+    "traits": ["floats"],
+    "moon_affinity": { "moon": "vesk", "growth_bonus": 0.5, "mutation_chance": 0.1 },
+    "mutation": { "name": "Nullpoint Melon", "value_mult": 3 },
+    "unlocked_from_start": true
+  },
+  "whisper_wheat": {
+    "name": "Whisper Wheat",
+    "growth_days": 5,
+    "sell_value": 60,
+    "seed_price": 30,
+    "family": "grain",
+    "color": [235, 215, 130],
+    "traits": ["sways"],
+    "moon_affinity": { "moon": "ilo", "growth_bonus": 0.35, "mutation_chance": 0.08 },
+    "mutation": { "name": "Chorus Wheat", "value_mult": 3 },
+    "unlocked_from_start": true
+  },
+  "crimson_tuber": {
+    "name": "Crimson Tuber",
+    "growth_days": 4,
+    "sell_value": 48,
+    "seed_price": 25,
+    "family": "root",
+    "color": [225, 90, 90],
+    "traits": ["underground"],
+    "moon_affinity": { "moon": "vesk", "growth_bonus": 0.35, "mutation_chance": 0.08 },
+    "mutation": { "name": "Heartroot Tuber", "value_mult": 3 },
+    "unlocked_from_start": true
+  },
+  "prism_pod": {
+    "name": "Prism Pod",
+    "growth_days": 10,
+    "sell_value": 320,
+    "seed_price": 120,
+    "family": "pod",
+    "color": [160, 220, 255],
+    "traits": ["strict_watering"],
+    "moon_affinity": { "moon": "vesk", "growth_bonus": 0.5, "mutation_chance": 0.15 },
+    "mutation": { "name": "Spectrum Pod", "value_mult": 3 },
+    "unlocked_from_start": true
+  },
+  "echo_bloom": {
+    "name": "Echo Bloom",
+    "growth_days": 6,
+    "sell_value": 150,
+    "seed_price": 70,
+    "family": "flower",
+    "color": [250, 170, 220],
+    "traits": ["sways", "glow_when_ripe"],
+    "moon_affinity": { "moon": "ilo", "growth_bonus": 0.5, "mutation_chance": 0.12 },
+    "mutation": { "name": "Resonant Bloom", "value_mult": 3 },
+    "unlocked_from_start": false,
+    "unlocked_by_codex_set": "meadow"
+  },
+  "duskcap": {
+    "name": "Duskcap",
+    "growth_days": 8,
+    "sell_value": 210,
+    "seed_price": 95,
+    "family": "fungus",
+    "color": [140, 110, 200],
+    "traits": ["glow_when_ripe"],
+    "moon_affinity": { "moon": "vesk", "growth_bonus": 0.5, "mutation_chance": 0.12 },
+    "mutation": { "name": "Midnight Duskcap", "value_mult": 3 },
+    "unlocked_from_start": false,
+    "unlocked_by_codex_set": "crystal"
+  },
+  "dream_lotus": {
+    "name": "Dream Lotus",
+    "growth_days": 9,
+    "sell_value": 400,
+    "seed_price": 0,
+    "family": "flower",
+    "color": [255, 240, 180],
+    "traits": ["glow_when_ripe", "floats"],
+    "moon_affinity": { "moon": "ilo", "growth_bonus": 0.6, "mutation_chance": 0.2 },
+    "mutation": { "name": "Waking Lotus", "value_mult": 3 },
+    "unlocked_from_start": false,
+    "unlocked_by_quest": true
+  }
+}

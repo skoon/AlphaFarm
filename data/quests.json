@@ -1,0 +1,50 @@
+{
+  "questline": {
+    "id": "dreaming_ground",
+    "name": "The Dreaming Ground",
+    "steps": [
+      {
+        "id": "signal",
+        "title": "A Signal in the Soil",
+        "gate": { "type": "total_harvests", "value": 10 },
+        "trigger": "terminal",
+        "text": "The habitat terminal flags a repeating sub-surface signal originating directly beneath your field. It pulses every time you harvest. Juno confirms: it is not geological.",
+        "journal": "A signal pulses beneath the farm, in time with my harvests. Ask around the outpost."
+      },
+      {
+        "id": "translation",
+        "title": "The Botanist's Theory",
+        "gate": { "type": "codex_entries", "value": 5 },
+        "trigger": "talk_sylla",
+        "text": "Sylla cross-references your codex scans. Every wild plant shares one genetic marker — a receiver. 'They're antennae,' she whispers. 'The whole biosphere is listening to something below.'",
+        "journal": "Sylla says the wild flora are antennae for something underground. Healthy soil strengthens the signal."
+      },
+      {
+        "id": "resonance",
+        "title": "A Chord Beneath the Field",
+        "gate": { "type": "avg_resonance", "value": 0.65 },
+        "trigger": "terminal",
+        "text": "Your careful crop rotation has raised the field's resonance. The terminal now renders the signal as audio: a slow, vast chord — the sound of something enormous, dreaming.",
+        "journal": "The signal is a chord. The healthier my soil, the clearer it sings. Keep rotating crops; keep harvesting."
+      },
+      {
+        "id": "caretaker",
+        "title": "What the Caretaker Heard",
+        "gate": { "type": "total_harvests", "value": 25 },
+        "trigger": "talk_care7",
+        "text": "CARE-7 opens a sealed log: the previous homesteader heard the chord too — and fled. 'DIRECTIVE CONFLICT,' the unit hums. 'They feared the planet. This unit believes the planet was only lonely. Go to the great crystal. At night. It waits.'",
+        "journal": "CARE-7: the last farmer fled the voice. Visit the great crystal east of the field — at night."
+      },
+      {
+        "id": "awakening",
+        "title": "The Dreaming Ground",
+        "gate": { "type": "none", "value": 0 },
+        "trigger": "great_crystal_night",
+        "text": "You touch the great crystal under the twin moons. Light floods the field — every furrow you tilled glows like a circuit. A voice, made of root and mineral and patience: 'YOU TEND. WE WAKE. GROW WITH US.' Something small and warm settles into your pocket: a seed that did not exist yesterday.",
+        "journal": "The planet spoke. It gave me a seed — a Dream Lotus. Veridia is awake, and we are its garden.",
+        "reward_seed": "dream_lotus",
+        "reward_seed_count": 3
+      }
+    ]
+  }
+}
