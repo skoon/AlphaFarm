@@ -27,6 +27,27 @@ uv run pytest
 uv run python tests/smoke.py
 ```
 
+## Build a standalone executable
+
+Package the game into a single native binary (bundling Python, pygame, and all
+`data/`/`assets/`) with [PyInstaller](https://pyinstaller.org):
+
+```
+uv run --group build python build.py          # -> dist/alphafarm[.exe]
+uv run --group build python build.py --zip     # also makes a release archive
+```
+
+The binary is fully self-contained: copy just `dist/alphafarm.exe` (Windows) or
+`dist/alphafarm` (Linux) anywhere and run it — no Python required. Save files are written
+to a `saves/` folder next to the executable.
+
+**Cross-compiling is not supported.** PyInstaller builds only for the OS it runs on, so
+build the Windows `.exe` on Windows and the Linux binary on Linux. To produce both at once,
+push a `v*` tag (or run the workflow manually): `.github/workflows/build.yml` builds each on
+its own runner and attaches `alphafarm-windows.zip` / `alphafarm-linux.tar.gz` to a GitHub
+Release. On Linux, build on the oldest glibc you need to support — the binary runs on that
+glibc version and newer.
+
 ## Controls
 
 | Key | Action |
@@ -80,8 +101,9 @@ tell you when the ground notices.
 
 ```
 main.py               # game loop, input, state routing
+build.py              # PyInstaller build script (standalone executables)
 game/
-  config.py           # JSON loading (data/config.json holds every tunable)
+  config.py           # JSON loading + source/frozen path resolution
   assets.py           # sprite sheet slicing (assets/ -> render.SPRITES)
   world.py            # tile grid, farming actions, soil resonance
   player.py           # movement, collision, energy, tools
@@ -96,6 +118,8 @@ game/
   render.py           # ALL drawing (drop sprite sheets in here later)
   ui.py               # HUD, panels, dialogue, debug overlay
 data/                 # config, map, crops, items, flora, npcs, dialogue, quests (all editable)
-saves/                # savegame.json (created at runtime)
+assets/               # sprite sheets (player, tileset, NPCs, buildings)
+saves/                # savegame.json (created at runtime, next to the executable when frozen)
 tests/                # pytest suite + headless smoke run
+.github/workflows/    # build.yml — CI that builds Windows + Linux binaries
 ```

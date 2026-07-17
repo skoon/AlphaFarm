@@ -15,9 +15,8 @@ from __future__ import annotations
 import pygame
 
 from game import render
-from game.config import BASE_DIR, load_json
+from game.config import ASSET_DIR, load_json
 
-ASSET_DIR = BASE_DIR / "assets"
 CELL = 32               # outside.png grid size
 PLAYER_FRAME = 256      # astro sheet frame size
 PLAYER_ROWS = ["down", "left", "right", "up"]

@@ -53,6 +53,13 @@
 - [x] Crop growth-stage sprites + floating watermelon for ripe Gravity Melons
 - [x] All 9 wild-flora species as distinct sprites (boxes in data/wild_flora.json)
 
+## Packaging (2026-07-16)
+- [x] Frozen-aware paths in game/config.py (bundle for data/assets, exe-dir for saves)
+- [x] build.py — PyInstaller onefile build for the current OS (+ --zip archive)
+- [x] pyinstaller in a `build` uv dependency-group
+- [x] .github/workflows/build.yml — CI builds Windows + Linux, releases on v* tags
+- [x] Verified: exe runs standalone from a clean dir (bundled assets load); 86 tests pass
+
 ## Follow-up ideas (not started)
 - [ ] SciFiCreatures_NES_4x30_alphaBG.png — no creature system yet; could become
       night critters or ion-storm hazards
