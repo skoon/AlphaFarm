@@ -1,0 +1,10 @@
+{
+  "lumen_berry": { "good": "Lumen Preserve", "days": 2, "value": 90 },
+  "whisper_wheat": { "good": "Whisper Loaf", "days": 2, "value": 150 },
+  "crimson_tuber": { "good": "Heartroot Ration", "days": 2, "value": 120 },
+  "gravity_melon": { "good": "Null-G Nectar", "days": 3, "value": 280 },
+  "prism_pod": { "good": "Focusing Lens", "days": 4, "value": 800 },
+  "echo_bloom": { "good": "Echo Attar", "days": 3, "value": 375 },
+  "duskcap": { "good": "Midnight Extract", "days": 3, "value": 520 },
+  "dream_lotus": { "good": "Dream Tincture", "days": 4, "value": 1000 }
+}

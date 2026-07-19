@@ -1,0 +1,32 @@
+{
+  "hoe2": {
+    "name": "Terra-Hoe Mk-II",
+    "price": 700,
+    "desc": "Reinforced blade — tills a 3-tile row in one swing.",
+    "max": 1
+  },
+  "canister2": {
+    "name": "Canister Mk-II",
+    "price": 900,
+    "desc": "Wide nozzle — waters a 3-tile row per squeeze.",
+    "max": 1
+  },
+  "pack": {
+    "name": "Pack Expansion",
+    "price": 600,
+    "desc": "Salvaged cargo webbing: +12 inventory slots.",
+    "max": 1
+  },
+  "drone": {
+    "name": "Irrigation Drone",
+    "price": 1200,
+    "desc": "Place with the Planter on tilled soil. Waters its 3x3 patch every morning (calibrated to skip fussy Prism Pods).",
+    "max": 6
+  },
+  "kiln": {
+    "name": "Bio-Kiln",
+    "price": 1500,
+    "desc": "Place with the Planter on open grass. Slow-roasts crops into artisan goods worth far more.",
+    "max": 2
+  }
+}

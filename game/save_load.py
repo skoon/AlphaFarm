@@ -7,7 +7,7 @@ from typing import Any
 
 from game.config import SAVE_DIR, SAVE_PATH
 
-SAVE_VERSION = 1
+SAVE_VERSION = 2  # v2 adds player.upgrades, tile gear, favors; all guarded on load
 
 
 def save_game(state: dict[str, Any], path: Path = SAVE_PATH) -> None:
@@ -24,8 +24,8 @@ def load_game(path: Path = SAVE_PATH) -> dict[str, Any] | None:
         return None
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
-    if data.get("version") != SAVE_VERSION:
-        raise ValueError(f"unsupported save version: {data.get('version')}")
+    if data.get("version", 0) > SAVE_VERSION:
+        raise ValueError(f"save is from a newer game version: {data.get('version')}")
     return data
 
 

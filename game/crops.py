@@ -6,13 +6,21 @@ from typing import Any
 
 from game.config import load_json
 
-# Inventory item id conventions: "seed:<crop_id>", "crop:<crop_id>", "crop:<crop_id>#mut"
+# Inventory item id conventions: "seed:<crop_id>", "crop:<crop_id>", "crop:<crop_id>#mut",
+# "good:<crop_id>" (kiln-processed artisan good), "gear:<gear_id>" (placeable equipment)
 MUT_SUFFIX = "#mut"
 
 
 class CropDefs:
-    def __init__(self, data: dict[str, Any] | None = None):
+    """Item registry: crops plus artisan-good recipes and placeable gear names."""
+
+    def __init__(self, data: dict[str, Any] | None = None,
+                 recipes: dict[str, Any] | None = None,
+                 gear: dict[str, Any] | None = None):
         self.defs: dict[str, Any] = data if data is not None else load_json("crops.json")
+        self.recipes: dict[str, Any] = recipes if recipes is not None \
+            else load_json("recipes.json")
+        self.gear: dict[str, Any] = gear if gear is not None else load_json("upgrades.json")
 
     def get(self, crop_id: str) -> dict[str, Any]:
         return self.defs[crop_id]
@@ -22,6 +30,10 @@ class CropDefs:
 
     def item_name(self, item_id: str) -> str:
         kind, _, rest = item_id.partition(":")
+        if kind == "good":
+            return self.recipes[rest]["good"]
+        if kind == "gear":
+            return self.gear[rest]["name"]
         crop_id, _, flag = rest.partition(MUT_SUFFIX[0])
         d = self.get(crop_id)
         if kind == "seed":
@@ -31,6 +43,8 @@ class CropDefs:
         return d["name"]
 
     def sale_value(self, item_id: str) -> int:
+        if item_id.startswith("good:"):
+            return self.recipes[item_id[len("good:"):]]["value"]
         if not item_id.startswith("crop:"):
             return 0
         crop_id = item_id[len("crop:"):].removesuffix(MUT_SUFFIX)

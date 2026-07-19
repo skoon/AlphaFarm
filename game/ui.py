@@ -49,6 +49,8 @@ class UI:
         self.hotbar_rects: list[tuple[pygame.Rect, str]] = []
         self.shop_row_rects: list[pygame.Rect] = []
         self.shop_tab_rects: dict[str, pygame.Rect] = {}
+        self.upgrade_row_rects: list[pygame.Rect] = []
+        self.kiln_row_rects: list[pygame.Rect] = []
 
     def toast(self, text: str, ttl: float = 3.5) -> None:
         self.toasts.append([text, ttl])
@@ -189,11 +191,16 @@ class UI:
         self._panel(surf, chip_rect)
         seed = game.player.selected_seed
         if seed:
-            d = game.defs.get(seed)
+            if seed.startswith("gear:"):
+                color, name = (170, 175, 190), game.defs.item_name(seed)
+                have = game.inventory.count(seed)
+            else:
+                d = game.defs.get(seed)
+                color, name = tuple(d["color"]), d["name"]
+                have = game.inventory.count(f"seed:{seed}")
             swatch = pygame.Rect(chip_rect.x + 8, chip_rect.y + 8, 14, 14)
-            pygame.draw.rect(surf, tuple(d["color"]), swatch, border_radius=3)
-            have = game.inventory.count(f"seed:{seed}")
-            name_img = self.small.render(d["name"], True, TEXT)
+            pygame.draw.rect(surf, color, swatch, border_radius=3)
+            name_img = self.small.render(name, True, TEXT)
             surf.blit(name_img, (swatch.right + 6, chip_rect.y + 5))
             qty_img = self.small.render(f"x{have}", True, ACCENT)
             surf.blit(qty_img, (swatch.right + 6, chip_rect.y + 5 + name_img.get_height()))
@@ -370,6 +377,63 @@ class UI:
             y = self._text(surf, marker + opt, rect.x + 14, y,
                            ACCENT if i == index else TEXT)
 
+    def draw_upgrades(self, surf, game) -> None:
+        self.upgrade_row_rects = []
+        rect = pygame.Rect(self.w // 2 - 300, 60, 600, 400)
+        self._panel(surf, rect)
+        self._text(surf, "TINKS' GEAR — 'Everything salvaged, everything works. Mostly.'",
+                   rect.x + 16, rect.y + 10, ACCENT)
+        y = rect.y + 44
+        rows = game.upgrade_rows()
+        for i, row in enumerate(rows):
+            row_rect = pygame.Rect(rect.x + 10, y - 3, rect.w - 20, 48)
+            self.upgrade_row_rects.append(row_rect)
+            selected = i == game.upgrade_index
+            if selected:
+                hl = pygame.Surface(row_rect.size, pygame.SRCALPHA)
+                hl.fill((255, 210, 120, 26))
+                surf.blit(hl, row_rect.topleft)
+            if row["owned"] >= row["max"]:
+                status, scolor = "OWNED" if row["max"] == 1 else f"MAX {row['max']}", DIM
+            else:
+                tag = f" ({row['owned']}/{row['max']})" if row["max"] > 1 else ""
+                status, scolor = f"{row['price']} cr{tag}", ACCENT
+            name_color = ACCENT if selected else TEXT
+            self._text(surf, ("> " if selected else "  ") + row["name"],
+                       rect.x + 16, y, name_color)
+            img = self.font.render(status, True, scolor)
+            surf.blit(img, (rect.right - 20 - img.get_width(), y))
+            self._text(surf, row["desc"], rect.x + 34, y + 18, DIM, self.small)
+            y += 52
+        self._text(surf, f"Credits: {game.player.credits}   [Enter/click] buy   "
+                         f"[Esc] leave", rect.x + 16, rect.bottom - 26, DIM, self.small)
+
+    def draw_kiln(self, surf, game) -> None:
+        self.kiln_row_rects = []
+        rect = pygame.Rect(self.w // 2 - 300, 60, 600, 400)
+        self._panel(surf, rect)
+        self._text(surf, "BIO-KILN — slow heat, patient profit",
+                   rect.x + 16, rect.y + 10, ACCENT)
+        y = rect.y + 44
+        rows = game.kiln_rows()
+        if not rows:
+            self._text(surf, "(no processable crops in your bag)",
+                       rect.x + 16, y, DIM)
+        for i, row in enumerate(rows):
+            row_rect = pygame.Rect(rect.x + 10, y - 3, rect.w - 20, 28)
+            self.kiln_row_rects.append(row_rect)
+            selected = i == game.kiln_index
+            if selected:
+                hl = pygame.Surface(row_rect.size, pygame.SRCALPHA)
+                hl.fill((255, 210, 120, 26))
+                surf.blit(hl, row_rect.topleft)
+            color = ACCENT if selected else TEXT
+            self._text(surf, ("> " if selected else "  ") + row["label"],
+                       rect.x + 16, y, color)
+            y += 30
+        self._text(surf, "[Enter/click] load  [Esc] close",
+                   rect.x + 16, rect.bottom - 26, DIM, self.small)
+
     def draw_day_summary(self, surf, game) -> None:
         s = game.day_summary
         if not s:
@@ -411,6 +475,9 @@ class UI:
         if s.get("care7"):
             y = self._text(surf, f"CARE-7 watered {s['care7']} plants before you woke.",
                            rect.x + 18, y, (150, 200, 240))
+        if s.get("drones"):
+            y = self._text(surf, f"Your drones watered {s['drones']} tiles at first light.",
+                           rect.x + 18, y, (170, 175, 190))
         for line in s.get("favors", []):
             y = self._text(surf, line, rect.x + 18, y, ACCENT)
         self._text(surf, "[E] rise and shine", rect.x + 18, rect.bottom - 26,
@@ -431,7 +498,7 @@ class UI:
             ("Tab", "Cycle which seed is selected"),
             ("Mouse", "Click hotbar to switch tool; click shop rows/tabs"),
             ("Space", "Use current tool on the highlighted tile"),
-            ("E", "Interact: talk, terminal, shipping pod, habitat door"),
+            ("E", "Interact: talk, terminal, shipping pod, door, SHOP, kiln"),
             ("G", "Gift your first crop stack to a nearby NPC"),
             ("I / C / J", "Inventory / Flora Codex / Journal"),
             ("F5", "Quick-save"),

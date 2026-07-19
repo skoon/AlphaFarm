@@ -280,6 +280,39 @@ def draw_crop(surf: pygame.Surface, crop, x: int, y: int, ts: int, t: float) -> 
         _ripe_glint(surf, x, y, ts, t)
 
 
+def draw_gear(surf: pygame.Surface, gear: dict, x: int, y: int, ts: int, t: float) -> None:
+    cx, cy = x * ts + ts // 2, y * ts + ts // 2
+    if gear["kind"] == "drone":
+        bob = int(math.sin(t * 2.0 + x * 1.3) * 2)
+        shadow = pygame.Rect(0, 0, ts // 2, ts // 6)
+        shadow.center = (cx, cy + ts // 4)
+        pygame.draw.ellipse(surf, (40, 30, 45), shadow)
+        body = pygame.Rect(0, 0, int(ts * 0.55), int(ts * 0.3))
+        body.center = (cx, cy - ts // 5 + bob)
+        pygame.draw.ellipse(surf, (150, 155, 172), body)
+        pygame.draw.ellipse(surf, (96, 100, 118), body, 1)
+        light = (110, 190, 255) if math.sin(t * 4 + x) > 0 else (60, 110, 170)
+        pygame.draw.circle(surf, light, (cx, body.bottom - 2), 2)
+    elif gear["kind"] == "kiln":
+        base = pygame.Rect(0, 0, int(ts * 0.78), int(ts * 0.62))
+        base.midbottom = (cx, y * ts + ts - 2)
+        pygame.draw.rect(surf, (74, 58, 66), base, border_radius=4)
+        dome = pygame.Rect(0, 0, base.w - 6, base.h)
+        dome.midbottom = (cx, base.top + 8)
+        pygame.draw.ellipse(surf, (94, 74, 82), dome)
+        mouth = pygame.Rect(0, 0, ts // 3, ts // 5)
+        mouth.midbottom = (cx, base.bottom - 4)
+        loaded = gear.get("crop_id")
+        glow = 0.65 + 0.35 * math.sin(t * 3.1) if loaded else 0.0
+        ember = _lerp((30, 22, 30), (255, 150, 60), glow)
+        pygame.draw.rect(surf, ember, mouth, border_radius=2)
+        if loaded:
+            for i in range(2):
+                sx = cx - 3 + i * 6
+                sy = dome.top - 2 - int((t * 9 + i * 7) % 8)
+                pygame.draw.circle(surf, (120, 110, 120), (sx, sy), 1)
+
+
 def draw_wild_plant(surf: pygame.Surface, species: dict, x: int, y: int, ts: int, t: float) -> None:
     sprite = SPRITES.get(f"flora:{species['name']}")
     if sprite:

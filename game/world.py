@@ -20,6 +20,7 @@ class Tile:
         self.crop: Crop | None = None
         self.resonance = resonance     # hidden living-soil value
         self.last_family: str | None = None
+        self.gear: dict[str, Any] | None = None  # {"kind": "drone"|"kiln", ...state}
 
     @property
     def solid(self) -> bool:
@@ -36,6 +37,7 @@ class Tile:
             "crop": self.crop.to_dict() if self.crop else None,
             "resonance": self.resonance,
             "last_family": self.last_family,
+            "gear": self.gear,
         }
 
     def apply_dict(self, d: dict[str, Any], defs: CropDefs) -> None:
@@ -44,6 +46,7 @@ class Tile:
         self.crop = Crop.from_dict(d["crop"], defs) if d["crop"] else None
         self.resonance = d["resonance"]
         self.last_family = d["last_family"]
+        self.gear = d.get("gear")
 
 
 class World:
@@ -135,6 +138,50 @@ class World:
         t.crop = None
         return item, qty
 
+    # ---- placeable gear --------------------------------------------------
+
+    def building_at(self, x: int, y: int) -> dict[str, Any] | None:
+        for b in self.buildings:
+            if b["x"] <= x < b["x"] + b["w"] and b["y"] <= y < b["y"] + b["h"]:
+                return b
+        return None
+
+    def place_gear(self, x: int, y: int, kind: str) -> bool:
+        t = self.tile(x, y)
+        if t is None or t.gear is not None:
+            return False
+        if kind == "drone" and t.kind == "soil" and t.tilled and t.crop is None:
+            t.gear = {"kind": "drone"}
+            return True
+        if kind == "kiln" and t.kind == "grass":
+            t.gear = {"kind": "kiln"}
+            return True
+        return False
+
+    def remove_gear(self, x: int, y: int) -> dict[str, Any] | None:
+        t = self.tile(x, y)
+        if t is None or t.gear is None:
+            return None
+        gear, t.gear = t.gear, None
+        return gear
+
+    def gear_tiles(self, kind: str) -> list[tuple[int, int, Tile]]:
+        return [(x, y, t) for x, y, t in self.iter_tiles()
+                if t.gear and t.gear["kind"] == kind]
+
+    def drone_morning_water(self) -> int:
+        """Each drone waters its 3x3 patch, skipping strict-watering crops."""
+        watered = 0
+        for dx_, dy_, _ in self.gear_tiles("drone"):
+            for ny in range(dy_ - 1, dy_ + 2):
+                for nx in range(dx_ - 1, dx_ + 2):
+                    t = self.tile(nx, ny)
+                    if t and t.kind == "soil" and t.tilled and \
+                            not (t.crop and t.crop.strict_watering) and not t.watered:
+                        if self.water(nx, ny):
+                            watered += 1
+        return watered
+
     # ---- daily tick ------------------------------------------------------
 
     def end_of_day(self, moons, day: int, aurora_mult: float, rng: random.Random) -> None:
@@ -162,7 +209,7 @@ class World:
     def to_dict(self) -> dict[str, Any]:
         changed = {}
         for x, y, t in self.iter_tiles():
-            if t.kind != "soil" and t.crop is None:
+            if t.kind != "soil" and t.crop is None and t.gear is None:
                 continue
             changed[f"{x},{y}"] = t.to_dict()
         return {"tiles": changed}

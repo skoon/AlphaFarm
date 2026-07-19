@@ -85,10 +85,14 @@
 - [x] Phase B tests/smoke green (121 tests; portrait/outpost/terminal/night shots)
 
 ### Phase C — Economy arc
-- [ ] C1 Tinks upgrade shop: tools II, pack, irrigation drones
-- [ ] C2 Bio-Kiln processing (data/recipes.json)
-- [ ] C3 Balance pass + test_balance.py; save migration v2
-- [ ] Phase C tests/smoke green
+- [x] C1 Tinks' gear shop behind the SHOP building door (also closes the
+      can't-enter-the-shop backlog bug): Hoe/Canister Mk-II 3-tile rows, Pack
+      Expansion (+12 slots), Irrigation Drones (3x3 morning watering, skip Prism
+      Pods), placeable via the Planter; hoe packs gear back up
+- [x] C2 Bio-Kiln processing (Opus subagent: load/collect flow, kiln UI, goods
+      ship via the existing bin; recipes.json + goods registry)
+- [x] C3 Balance tests (test_balance.py) + save v2 with backward-compatible load
+- [x] Phase C tests/smoke/screenshots green (145 tests; shop/farm/kiln shots)
 
 ### Phase D — Mine, endgame, QoL
 - [ ] D1 Mine map, minerals, fauna codex set (creatures sheet)
@@ -97,10 +101,12 @@
 - [ ] Phase D tests/smoke green
 
 ## Post-phase backlog (Scott, 2026-07-19)
+- [ ] BUG: player can walk through NPCs (no player-vs-NPC collision; add soft
+      collision or push-apart so they read as solid)
 - [x] BUG: NPCs walk through buildings — FIXED in Phase B6 (BFS pathfinding; test
       walks Sylla's full commute asserting she never enters a solid tile)
-- [ ] BUG: the outpost SHOP building can't be entered — needs a door interaction
-      (Tinks' shop UI, or an interior scene; consider alongside C1 Tinks upgrade shop)
+- [x] BUG: the outpost SHOP building can't be entered — FIXED in C1 (interacting
+      with the SHOP building opens Tinks' gear shop)
 - [ ] Implement the BAR as a real place (door interaction/interior; Hux + evening
       NPC schedules could route through it)
 - [ ] Replace synth ambient hum with real music — Scott is sourcing tracks; drop-in

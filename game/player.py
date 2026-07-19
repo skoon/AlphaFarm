@@ -22,6 +22,7 @@ class Player:
         self.selected_seed: str | None = None
         self.moving: bool = False  # drives walk animation; not persisted
         self.swing_t: float = 0.0  # tool-swing feedback timer; not persisted
+        self.upgrades: set[str] = set()  # owned one-shot upgrades (hoe2/canister2/pack)
 
     def move(self, ix: int, iy: int, dt: float, world) -> None:
         """4-direction movement with axis-separated collision; ix/iy in {-1,0,1}."""
@@ -69,6 +70,7 @@ class Player:
         return {
             "x": self.x, "y": self.y, "energy": self.energy, "credits": self.credits,
             "tool": self.tool, "selected_seed": self.selected_seed,
+            "upgrades": sorted(self.upgrades),
         }
 
     def from_dict(self, d: dict[str, Any]) -> None:
@@ -78,3 +80,4 @@ class Player:
         self.credits = d["credits"]
         self.tool = d["tool"]
         self.selected_seed = d["selected_seed"]
+        self.upgrades = set(d.get("upgrades", []))

@@ -13,6 +13,10 @@ class Inventory:
         self.max_stack: int = inv["max_stack"]
         self.slots: list[dict[str, Any] | None] = [None] * self.size
 
+    def expand(self, extra_slots: int) -> None:
+        self.size += extra_slots
+        self.slots += [None] * extra_slots
+
     def add(self, item_id: str, qty: int = 1) -> int:
         """Add items, stacking first. Returns leftover that did not fit."""
         for slot in self.slots:

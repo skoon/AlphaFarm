@@ -77,6 +77,13 @@ Till → plant → water → wait → harvest. Ship crops from the pod on the la
 in credits overnight and sells seeds. Sleep at the habitat door to start the next day (autosaves
 to `saves/savegame.json`). Energy drains with tool use — collapse at 02:00 and you wake up rough.
 
+Spend your credits at **Tinks' SHOP** (interact with its door at the outpost): Mk-II hoe and
+canister work 3-tile rows, a Pack Expansion adds 12 inventory slots, Irrigation Drones water
+their 3x3 patch every morning (placed with the Planter on tilled soil; they know better than to
+water Prism Pods), and the Bio-Kiln (placed on grass) slow-roasts crops into artisan goods worth
+~2.5x — load it with E, collect when the embers settle, ship goods like any crop. The hoe packs
+placed gear back up.
+
 **Crops:** Lumen Berries (3d, glow at night when ripe), Gravity Melons (7d, float), Whisper Wheat
 (5d, sways with no wind), Crimson Tubers (4d, underground — watch for the soil bulge), Prism Pods
 (10d, high value, must be watered *exactly once* per day or they wilt).
