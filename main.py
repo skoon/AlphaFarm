@@ -65,6 +65,9 @@ class Game:
         self.dialogue_queue: list[tuple[str, str]] = []
         self.shop_mode = "sell"
         self.shop_index = 0
+        self.upgrade_index = 0
+        self.kiln_index = 0
+        self.kiln_pos: tuple[int, int] | None = None
         self.sleep_index = 0
         self.debug = False
         self.t = 0.0
@@ -109,6 +112,8 @@ class Game:
             return False
         self.clock.from_dict(state["clock"])
         self.player.from_dict(state["player"])
+        if "pack" in self.player.upgrades:
+            self.inventory.expand(12)
         self.inventory.from_dict(state["inventory"])
         self.shipping_bin.from_dict(state["shipping_bin"])
         self.world.from_dict(state["world"])
@@ -160,10 +165,15 @@ class Game:
         name = self.items["tools"][self.player.tool]["name"]
         if self.player.tool == "plant":
             seed = self.player.selected_seed
+            if seed and seed.startswith("gear:"):
+                return f"Placer: {self.defs.item_name(seed)} (x{self.inventory.count(seed)})"
             if seed:
                 have = self.inventory.count(f"seed:{seed}")
                 return f"{name}: {self.defs.get(seed)['name']} (x{have})"
             return f"{name}: no seeds"
+        upgrade = {"hoe": "hoe2", "water": "canister2"}.get(self.player.tool)
+        if upgrade and upgrade in self.player.upgrades:
+            return name + " Mk-II"
         return name
 
     def seed_price(self, crop_id: str) -> int:
@@ -172,22 +182,37 @@ class Game:
             price = int(round(price * (1 - self.cfg["npcs"]["tinks_seed_discount"])))
         return price
 
+    def _row_targets(self, tx: int, ty: int, upgrade: str) -> list[tuple[int, int]]:
+        """Target tile, widened to a facing-perpendicular row with the Mk-II tools."""
+        tiles = [(tx, ty)]
+        if upgrade in self.player.upgrades:
+            fx, fy = self.player.facing
+            px, py = abs(fy), abs(fx)
+            tiles += [(tx + px, ty + py), (tx - px, ty - py)]
+        return tiles
+
     def cycle_seed(self) -> None:
-        held = self.inventory.seed_ids_held()
+        held: list[str] = self.inventory.seed_ids_held()
+        held += [f"gear:{g}" for g in ("drone", "kiln")
+                 if self.inventory.count(f"gear:{g}") > 0]
         if not held:
             self.player.selected_seed = None
             self.ui.toast("No seeds in inventory.")
             return
         cur = self.player.selected_seed
         idx = (held.index(cur) + 1) % len(held) if cur in held else 0
-        self.player.selected_seed = held[idx]
-        self.ui.toast(f"Seed: {self.defs.get(held[idx])['name']}")
+        sel = held[idx]
+        self.player.selected_seed = sel
+        if sel.startswith("gear:"):
+            self.ui.toast(f"Placer: {self.defs.item_name(sel)}")
+        else:
+            self.ui.toast(f"Seed: {self.defs.get(sel)['name']}")
 
     def shop_rows(self) -> list[dict]:
         rows = []
         if self.shop_mode == "sell":
             for s in self.inventory.items():
-                if s["id"].startswith("crop:"):
+                if s["id"].startswith("crop:") or s["id"].startswith("good:"):
                     value = self.defs.sale_value(s["id"])
                     rows.append({"id": s["id"], "qty": s["qty"],
                                  "label": f"{self.defs.item_name(s['id'])} x{s['qty']}"
@@ -218,18 +243,36 @@ class Game:
         wx, wy = tx * self.ts + self.ts // 2, ty * self.ts + self.ts // 2
 
         if tool == "hoe":
-            if self.world.till(tx, ty):
+            gear = self.world.remove_gear(tx, ty)
+            if gear:
+                if gear.get("crop_id"):
+                    self.inventory.add(f"crop:{gear['crop_id']}", 1)
+                self.inventory.add(f"gear:{gear['kind']}", 1)
+                self.ui.toast(f"Packed up the {self.defs.item_name('gear:' + gear['kind'])}.")
+                audio.play("blip")
+                return
+            hit = False
+            for hx, hy in self._row_targets(tx, ty, "hoe2"):
+                if self.world.till(hx, hy):
+                    hit = True
+                    self.particles.burst("soil", hx * self.ts + self.ts // 2,
+                                         hy * self.ts + self.ts // 2, self.rng)
+            if hit:
                 self.player.spend_energy("hoe")
-                self.particles.burst("soil", wx, wy, self.rng)
                 audio.play("hoe")
         elif tool == "water":
-            tile = self.world.tile(tx, ty)
-            if self.world.water(tx, ty):
+            hit = False
+            for hx, hy in self._row_targets(tx, ty, "canister2"):
+                tile = self.world.tile(hx, hy)
+                if self.world.water(hx, hy):
+                    hit = True
+                    self.particles.burst("water", hx * self.ts + self.ts // 2,
+                                         hy * self.ts + self.ts // 2, self.rng)
+                    if tile and tile.crop and tile.crop.wilted:
+                        self.ui.toast("The Prism Pod wilted — it wanted exactly one watering!")
+            if hit:
                 self.player.spend_energy("water")
-                self.particles.burst("water", wx, wy, self.rng)
                 audio.play("water")
-                if tile and tile.crop and tile.crop.wilted:
-                    self.ui.toast("The Prism Pod wilted — it wanted exactly one watering!")
         elif tool == "harvest":
             result = self.world.harvest(tx, ty, self.rng)
             if result:
@@ -268,8 +311,22 @@ class Game:
                 self.ui.toast(f"Sampled another {sp['name']}.")
         elif tool == "plant":
             seed = self.player.selected_seed
-            if not seed or self.inventory.count(f"seed:{seed}") == 0:
-                self.ui.toast("No seeds selected — press Tab.")
+            item = seed if (seed or "").startswith("gear:") else f"seed:{seed}"
+            if not seed or self.inventory.count(item) == 0:
+                self.ui.toast("Nothing selected to plant — press Tab.")
+                return
+            if seed.startswith("gear:"):
+                kind = seed[len("gear:"):]
+                if self.world.place_gear(tx, ty, kind):
+                    self.inventory.remove(item, 1)
+                    self.player.spend_energy("plant")
+                    self.particles.burst("soil", wx, wy, self.rng, n=4)
+                    audio.play("plant")
+                    if self.inventory.count(item) == 0:
+                        self.cycle_seed()
+                else:
+                    spot = "tilled, empty soil" if kind == "drone" else "open grass"
+                    self.ui.toast(f"The {self.defs.item_name(item)} needs {spot}.")
                 return
             if self.world.plant(tx, ty, seed):
                 self.inventory.remove(f"seed:{seed}", 1)
@@ -315,6 +372,32 @@ class Game:
             return
 
         tile = self.world.tile(tx, ty)
+        if tile and tile.kind == "building":
+            b = self.world.building_at(tx, ty)
+            if b and b["image"] == "shop":
+                self.mode = "upgrades"
+                self.upgrade_index = 0
+                audio.play("blip")
+            else:
+                self.say("THE BAR", "A note on the door: 'Opening after the next "
+                                    "supply drop. Until then: BYO everything. — Mgmt.'")
+            return
+        if tile and tile.gear and tile.gear["kind"] == "kiln":
+            gear = tile.gear
+            crop_id = gear.get("crop_id")
+            if not crop_id:
+                self.mode = "kiln"
+                self.kiln_pos = (tx, ty)
+                self.kiln_index = 0
+                audio.play("blip")
+            elif self.clock.day < gear.get("ready_day", 0):
+                good = self.defs.item_name(f"good:{crop_id}")
+                days = gear["ready_day"] - self.clock.day
+                when = "ready tomorrow" if days == 1 else f"in {days} days"
+                self.ui.toast(f"The kiln hums warmly — {good} {when}.")
+            else:
+                self.collect_kiln(tx, ty)
+            return
         standing = self.world.tile(*self.player.standing_tile())
         kind = tile.kind if tile else ""
         if kind not in ("habitat_door", "terminal", "shipping_pod", "great_crystal") \
@@ -397,6 +480,113 @@ class Game:
             else:
                 self.ui.toast("Not enough credits.")
 
+    # ---- upgrades shop -----------------------------------------------------------
+
+    def owned_gear_count(self, gear_id: str) -> int:
+        return len(self.world.gear_tiles(gear_id)) + self.inventory.count(f"gear:{gear_id}")
+
+    def upgrade_rows(self) -> list[dict]:
+        rows = []
+        discount = self.npcs.perk("tinks")
+        for uid, u in self.defs.gear.items():
+            owned = self.owned_gear_count(uid) if uid in ("drone", "kiln") \
+                else int(uid in self.player.upgrades)
+            price = u["price"]
+            if discount:
+                price = int(round(price * (1 - self.cfg["npcs"]["tinks_seed_discount"])))
+            rows.append({"id": uid, "name": u["name"], "price": price,
+                         "desc": u["desc"], "owned": owned, "max": u["max"]})
+        return rows
+
+    def buy_upgrade(self) -> None:
+        rows = self.upgrade_rows()
+        if not rows:
+            return
+        self.upgrade_index = min(self.upgrade_index, len(rows) - 1)
+        row = rows[self.upgrade_index]
+        if row["owned"] >= row["max"]:
+            self.ui.toast("Tinks: 'You've cleaned me out of those!'")
+            return
+        if self.player.credits < row["price"]:
+            self.ui.toast("Tinks: 'Credits first, friend.'")
+            return
+        self.player.credits -= row["price"]
+        audio.play("credits")
+        uid = row["id"]
+        if uid in ("drone", "kiln"):
+            self.inventory.add(f"gear:{uid}", 1)
+            self.ui.toast(f"{row['name']} in your pack — place it with the Planter [5].")
+        else:
+            self.player.upgrades.add(uid)
+            if uid == "pack":
+                self.inventory.expand(12)
+            self.ui.toast(f"{row['name']} installed!")
+
+    # ---- bio-kiln ----------------------------------------------------------------
+
+    def kiln_rows(self) -> list[dict]:
+        """One row per distinct plain crop in the bag that has a recipe."""
+        rows = []
+        for crop_id, recipe in self.defs.recipes.items():
+            qty = self.inventory.count(f"crop:{crop_id}")
+            if qty <= 0:
+                continue
+            name = self.defs.get(crop_id)["name"]
+            rows.append({
+                "crop_id": crop_id,
+                "label": f"{qty}x {name} -> {recipe['good']} "
+                         f"({recipe['days']}d, {recipe['value']} cr)",
+            })
+        return rows
+
+    def load_kiln(self, crop_id: str) -> bool:
+        """Consume one plain crop and start the kiln at self.kiln_pos. False if stale."""
+        if self.kiln_pos is None:
+            return False
+        tx, ty = self.kiln_pos
+        tile = self.world.tile(tx, ty)
+        if not (tile and tile.gear and tile.gear["kind"] == "kiln"):
+            return False
+        if tile.gear.get("crop_id") or crop_id not in self.defs.recipes:
+            return False
+        if not self.inventory.remove(f"crop:{crop_id}", 1):
+            return False
+        tile.gear["crop_id"] = crop_id
+        tile.gear["ready_day"] = self.clock.day + self.defs.recipes[crop_id]["days"]
+        audio.play("plant")
+        return True
+
+    def load_selected_kiln(self) -> None:
+        rows = self.kiln_rows()
+        if not rows:
+            return
+        self.kiln_index = min(self.kiln_index, len(rows) - 1)
+        crop_id = rows[self.kiln_index]["crop_id"]
+        loaded = self.load_kiln(crop_id)
+        self.mode = "play"
+        if loaded:
+            self.ui.toast(f"The kiln takes your {self.defs.get(crop_id)['name']}"
+                          " and begins to glow.")
+
+    def collect_kiln(self, tx: int, ty: int) -> bool:
+        """Collect the finished good from a ready kiln. Keeps state on a full bag."""
+        tile = self.world.tile(tx, ty)
+        if not (tile and tile.gear and tile.gear["kind"] == "kiln"):
+            return False
+        crop_id = tile.gear.get("crop_id")
+        if not crop_id:
+            return False
+        if self.inventory.add(f"good:{crop_id}", 1):
+            self.ui.toast("Inventory full.")
+            return False
+        tile.gear.pop("crop_id", None)
+        tile.gear.pop("ready_day", None)
+        wx, wy = tx * self.ts + self.ts // 2, ty * self.ts + self.ts // 2
+        self.particles.burst("sparkle", wx, wy, self.rng)
+        audio.play("credits")
+        self.ui.toast(f"+1 {self.defs.item_name(f'good:{crop_id}')}")
+        return True
+
     # ---- day cycle ---------------------------------------------------------------
 
     def end_day(self, collapsed: bool) -> None:
@@ -417,6 +607,7 @@ class Game:
             for x, y in planted[:self.cfg["npcs"]["care7_water_tiles"]]:
                 self.world.water(x, y)
                 care7_watered += 1
+        drone_watered = self.world.drone_morning_water()
         self.flora.daily_spawn(self.world, self.moons, self.clock.day, self.rng)
         self.npcs.end_of_day()
         crop_pool = [cid for cid in (set(self.defs.starter_ids()) |
@@ -435,6 +626,7 @@ class Game:
             "forecast": self.events.forecast_name(),
             "spored": spored,
             "care7": care7_watered,
+            "drones": drone_watered,
             "ilo": self.moons.phase_name("ilo", self.clock.day),
             "vesk": self.moons.phase_name("vesk", self.clock.day),
             "favors": [f"{SHORT_NAMES.get(f['npc'], f['npc'].capitalize())} asks: "
@@ -508,6 +700,30 @@ class Game:
                 self.mode = "play"
             return
 
+        if self.mode == "upgrades":
+            rows = self.upgrade_rows()
+            if k in (pygame.K_UP, pygame.K_w) and rows:
+                self.upgrade_index = (self.upgrade_index - 1) % len(rows)
+            elif k in (pygame.K_DOWN, pygame.K_s) and rows:
+                self.upgrade_index = (self.upgrade_index + 1) % len(rows)
+            elif k == pygame.K_RETURN:
+                self.buy_upgrade()
+            elif k in (pygame.K_ESCAPE, pygame.K_e):
+                self.mode = "play"
+            return
+
+        if self.mode == "kiln":
+            rows = self.kiln_rows()
+            if k in (pygame.K_UP, pygame.K_w) and rows:
+                self.kiln_index = (self.kiln_index - 1) % len(rows)
+            elif k in (pygame.K_DOWN, pygame.K_s) and rows:
+                self.kiln_index = (self.kiln_index + 1) % len(rows)
+            elif k == pygame.K_RETURN:
+                self.load_selected_kiln()
+            elif k in (pygame.K_ESCAPE, pygame.K_e):
+                self.mode = "play"
+            return
+
         if self.mode in ("inventory", "codex", "journal", "terminal", "help"):
             close = {"inventory": pygame.K_i, "codex": pygame.K_c, "journal": pygame.K_j,
                      "terminal": pygame.K_e, "help": pygame.K_SLASH}[self.mode]
@@ -571,6 +787,22 @@ class Game:
                     else:
                         self.shop_index = i
                     return
+        elif self.mode == "upgrades":
+            for i, rect in enumerate(self.ui.upgrade_row_rects):
+                if rect.collidepoint(e.pos):
+                    if i == self.upgrade_index:
+                        self.buy_upgrade()
+                    else:
+                        self.upgrade_index = i
+                    return
+        elif self.mode == "kiln":
+            for i, rect in enumerate(self.ui.kiln_row_rects):
+                if rect.collidepoint(e.pos):
+                    if i == self.kiln_index:
+                        self.load_selected_kiln()
+                    else:
+                        self.kiln_index = i
+                    return
 
     # ---- frame ---------------------------------------------------------------
 
@@ -627,6 +859,8 @@ class Game:
         for y in range(y0, y1):
             for x in range(x0, x1):
                 tile = self.world.tiles[y][x]
+                if tile.gear:
+                    render.draw_gear(ws, tile.gear, x, y, ts, self.t)
                 if tile.crop:
                     render.draw_crop(ws, tile.crop, x, y, ts, self.t)
         for w in self.flora.wild:
@@ -666,6 +900,10 @@ class Game:
             self.ui.draw_inventory(screen, self)
         elif self.mode == "shop":
             self.ui.draw_shop(screen, self)
+        elif self.mode == "upgrades":
+            self.ui.draw_upgrades(screen, self)
+        elif self.mode == "kiln":
+            self.ui.draw_kiln(screen, self)
         elif self.mode == "terminal":
             self.ui.draw_terminal(screen, self)
         elif self.mode == "codex":
