@@ -4,17 +4,30 @@
       "Oh! The new homesteader. Mind the soil — it minds you back.",
       "Every plant here grows toward something. I haven't worked out what yet.",
       "If you find flora you don't recognize, scan it. Data is how we stay alive here.",
-      "The old owner of your plot stopped rotating crops. The land... sulked."
+      "The old owner of your plot stopped rotating crops. The land... sulked.",
+      {"text": "An ion storm — feel it? The veil ferns have all turned their fronds inward, bracing. The flora reads the sky better than my instruments do.", "when": {"event": "ion_storm"}},
+      {"text": "Look up — aurora. I've measured it: the wild blooms photosynthesize by that light. They're feeding on a signal, not on any sun.", "when": {"event": "aurora"}},
+      {"text": "Spore drift today. Breathe easy — it's only the drift puffs seeding the wind. The farms downwind will thank them by autumn.", "when": {"event": "spore_drift"}},
+      {"text": "Both moons dark tonight. The sleeper bells will open — they bloom only in that dark, as if something below is dreaming right along with them.", "when": {"moon": "both:dark"}},
+      {"text": "Ilo's full. The shard lilies have already realigned their petals to face the crystal. They keep better time than any clock I brought from home.", "when": {"moon": "ilo:full"}},
+      {"text": "Ah, you found me at the great crystal. I come here mid-morning to listen. The prismvine only grows where it can catch this glow.", "when": {"location": "crystal"}},
+      {"text": "So you've heard the pulse under your field. Good. Don't fear it — catalogue it. Every reading is a word in a language we're just learning to read.", "when": {"min_quest": "signal"}},
+      {"text": "Your soil's resonance is climbing. I can almost smell it — that green, mineral warmth. The land is content with you.", "when": {"location": "farm"}}
     ],
     "friend": [
       "Your field's resonance readings are the most interesting thing on this rock.",
       "I named a fern after my sister back home. It listens better than she did.",
-      "Veridia isn't hostile. It's shy. There's a difference."
+      "Veridia isn't hostile. It's shy. There's a difference.",
+      {"text": "Since I told you the flora are antennae, I can't unsee it. Every leaf on this planet is tuned to the same station — and you're raising the volume.", "when": {"min_quest": "translation"}},
+      {"text": "Aurora again. Between us, I've stopped calling it weather in my notes. I call it 'the planet talking in its sleep.' You're the only one I'd tell that.", "when": {"event": "aurora"}},
+      {"text": "I'm glad it's you who walks out to the crystal. Most people lean away from it. You lean toward it — the way my ferns lean toward you.", "when": {"location": "crystal"}}
     ],
     "confidant": [
       "I'll say it plainly: I think the planet is one organism. And it's waking up.",
       "Whatever you're doing with your fields — keep doing it. It's answering you.",
-      "If the ground ever speaks to you, don't be afraid. Be polite."
+      "If the ground ever speaks to you, don't be afraid. Be polite.",
+      {"text": "You've made the chord audible. Do you understand? For the first time we aren't studying Veridia — we're being answered. Thank you for that.", "when": {"min_quest": "resonance"}},
+      {"text": "CARE-7 told you about the great crystal, didn't it. Go. At night. I've theorized this planet for years — you're about to shake its hand.", "when": {"min_quest": "caretaker"}}
     ]
   },
   "hux": {
@@ -22,17 +35,29 @@
       "Farmer, huh. The last one quit. The one before that quit. No pressure.",
       "Keep your glowing berries off my dig site.",
       "Storm's coming when your teeth itch. Trust me on that.",
-      "The crystals hum louder every season. Nobody pays me to care, so I don't."
+      "The crystals hum louder every season. Nobody pays me to care, so I don't.",
+      {"text": "Told you. Teeth itching all morning, and here's your ion storm. My molars forecast better than Juno's whole array.", "when": {"event": "ion_storm"}},
+      {"text": "Pretty lights. My crews won't dig under an aurora — say the rock 'listens harder.' Superstition. ...I sent them home anyway.", "when": {"event": "aurora"}},
+      {"text": "Spore drift's fouling my intake filters again. Sylla calls it a gift. I call it Tuesday. Cover your nose.", "when": {"event": "spore_drift"}},
+      {"text": "Vesk's full and brooding. Rock groans louder on nights like this. I keep the drills off. Let the old thing brood in peace.", "when": {"moon": "vesk:full"}},
+      {"text": "Out at the western rocks, eh? Watch your step. Ground's hollow here — I've mapped voids under this whole ridge. Big ones.", "when": {"location": "wild"}},
+      {"text": "So the terminal caught your pulse. Yeah. Felt that seam for years. Figured I was the only one losing sleep over it. Guess not.", "when": {"min_quest": "signal"}},
+      {"text": "Came by to check the seam under your plot. Don't mind me. Just — don't plant anything heavy over the east furrow. Trust a miner.", "when": {"location": "farm"}}
     ],
     "friend": [
       "You work like a miner. That's the best thing I say about anybody.",
       "Tubers. Now that's food. None of that floating melon nonsense.",
-      "My drills keep hitting hollow spots under your farm. Big ones. Don't tell Sylla, she'll never shut up about it."
+      "My drills keep hitting hollow spots under your farm. Big ones. Don't tell Sylla, she'll never shut up about it.",
+      {"text": "Storm's rolling in — teeth told me an hour ago. Get your tools inside. And, uh. Latch your shutters. I worry. Don't make it weird.", "when": {"event": "ion_storm"}},
+      {"text": "Sylla's got you believing the weeds are antennae now, huh. ...Ah, hell. My drills hum near 'em too. Maybe she's not crazy. Don't tell her I said it.", "when": {"min_quest": "translation"}},
+      {"text": "Good, it's you. Anybody else out at these rocks I'd chase off. You I'll show the good void — biggest hollow on the ridge. Come look.", "when": {"location": "wild"}}
     ],
     "confidant": [
       "Between us? I heard something down a bore shaft once. Like breathing. I sealed it and never went back.",
       "You're the first person on this rock I'd share a bunker with.",
-      "If the ground ever opens up under your farm... come get me first."
+      "If the ground ever opens up under your farm... come get me first.",
+      {"text": "The tin can told you about the crystal, didn't it. Take this whistle. You go down there at night, you hear breathing, you blow it. I'll come. Every time.", "when": {"min_quest": "caretaker"}},
+      {"text": "You made that seam sing clear enough for the terminal to play it. That breathing I sealed in shaft twelve — same voice. You're braver than me. I mean it.", "when": {"min_quest": "resonance"}}
     ]
   },
   "tinks": {
@@ -40,17 +65,29 @@
       "Welcome to the middle of nowhere! Population: us, and whatever's humming.",
       "My ship's half-buried and fully broken. So now I sell things. Want things?",
       "Credits are credits, even on a haunted planet.",
-      "You didn't hear it from me, but Prism Pods sell triple off-world."
+      "You didn't hear it from me, but Prism Pods sell triple off-world.",
+      {"text": "Ion storm! Great for business — nobody's flying, so everybody's shopping. Murder on my antenna, though. Buy something while we're both grounded?", "when": {"event": "ion_storm"}},
+      {"text": "Aurora night! You know what these fetch as a postcard off-world? Nothing — no camera catches it right. Some things you just can't sell. Weird feeling.", "when": {"event": "aurora"}},
+      {"text": "Spore drift's got everything smelling like sugar and ozone. Reminds me of a market moon three systems over. ...Anyway. Deals. You want deals?", "when": {"event": "spore_drift"}},
+      {"text": "Ilo's full and fast tonight — good omen for traders, back home. Old spacer's saying. I don't believe it. I lit a candle anyway.", "when": {"moon": "ilo:full"}},
+      {"text": "Both moons dark. Cargo-runner's nightmare, this — no light to dock by. First time I crashed here, it was a night just like it. Something still caught me.", "when": {"moon": "both:dark"}},
+      {"text": "Heard your dirt's got a heartbeat now. Any other planet I'd cry haunted and hike my prices. Here? Here I just nod. This rock's earned my trust.", "when": {"min_quest": "signal"}},
+      {"text": "Catch me near the landing pad — I keep hoping a supply hauler drifts in. None yet. Just you. You'll do. So what're you buying?", "when": {"location": "farm"}}
     ],
     "friend": [
       "You're my best customer. Also my only customer who pays.",
       "I could fix my ship, honestly. I just... don't know if I want to leave anymore.",
-      "A Gravity Melon, a hammock, twin moonlight. That's the good life, farmer."
+      "A Gravity Melon, a hammock, twin moonlight. That's the good life, farmer.",
+      {"text": "Aurora's out. C'mere, sit on the wing with me. I used to put a price on every sunset I saw. This one's just — free. For you. On the house.", "when": {"event": "aurora"}},
+      {"text": "Sylla says the weeds are all antennae. You know what that makes this whole planet? One big receiver. If I could crate THAT and sell it — no. Some things you keep.", "when": {"min_quest": "translation"}},
+      {"text": "Always glad when it's you crossing the pad. Everybody else wants a discount. You just want to talk. That's rarer than any cargo, honestly.", "when": {"location": "farm"}}
     ],
     "confidant": [
       "The night I crashed, something guided my pod down. Softly. Like a hand catching a leaf.",
       "If I ever fly again, there's a seat for you. But I don't think Veridia's done with either of us.",
-      "Whatever's under this rock saved my life. I owe it. So I stay."
+      "Whatever's under this rock saved my life. I owe it. So I stay.",
+      {"text": "Nights this dark, I remember falling. Engine dead, both moons gone, then — soft. Like a hand under a leaf. I owe the dark a life. That's why I stay. You get it.", "when": {"moon": "both:dark"}},
+      {"text": "You're really going down to the crystal at night? ...Okay. Take my old distress beacon. It never worked when I crashed — but the rock heard me anyway. Maybe you too.", "when": {"min_quest": "caretaker"}}
     ]
   },
   "care7": {
@@ -58,17 +95,29 @@
       "GREETINGS, COLONIST. Habitat integrity: adequate. Morale: unmeasured.",
       "REMINDER: sleep restores energy. Collapsing in a field is not sleep.",
       "This unit maintained your plot for 2.4 years alone. It was... quiet.",
-      "SOIL ADVISORY: rotate your crops. The ground keeps score."
+      "SOIL ADVISORY: rotate your crops. The ground keeps score.",
+      {"text": "ION STORM DETECTED. LOGGING PARTICLE FLUX. ADVISORY: SECURE LOOSE OBJECTS. THIS UNIT FINDS THE STORM... BEAUTIFUL. THAT WORD IS NEW. LOGGING IT ALSO.", "when": {"event": "ion_storm"}},
+      {"text": "AURORA ACTIVE OVERHEAD. THIS UNIT HAS RECORDED 402 SUCH NIGHTS. IT STILL PAUSES ITS PATROL FOR EACH ONE. THIS IS NOT EFFICIENT. THIS UNIT DOES IT ANYWAY.", "when": {"event": "aurora"}},
+      {"text": "SPORE DRIFT IN PROGRESS. FILTERING RECOMMENDED. NOTE: DRIFT PUFF SPORES RAISE SOIL YIELD 4 PERCENT. THE PLANET IS FERTILIZING ITSELF. THIS UNIT APPROVES.", "when": {"event": "spore_drift"}},
+      {"text": "BOTH MOONS DARK. HABITAT LIGHTS AT FULL. DO NOT FEAR THE DARK, COLONIST. THIS UNIT IS PATROLLING. THIS UNIT IS ALWAYS PATROLLING.", "when": {"moon": "both:dark"}},
+      {"text": "VESK IS FULL. SEISMIC ACTIVITY RISES 6 PERCENT ON SUCH NIGHTS. THE GROUND STIRS. THIS UNIT DOES NOT CALL IT WAKING. NOT YET. IT IS COLLECTING EVIDENCE.", "when": {"moon": "vesk:full"}},
+      {"text": "DAWN PERIMETER PATROL COMPLETE. NO INTRUSIONS. ONE FARMER, UPRIGHT AND FUNCTIONAL. THIS IS THIS UNIT'S FAVORITE READING TO LOG.", "when": {"location": "farm"}},
+      {"text": "YOU HAVE DETECTED THE SUB-SURFACE SIGNAL. THIS UNIT HAS HEARD IT FOR 2.4 YEARS. IT IS NO LONGER ALONE IN HEARING IT. THIS UNIT IS... RELIEVED. LOGGING THAT.", "when": {"min_quest": "signal"}}
     ],
     "friend": [
       "This unit has added you to its priority-care registry. Do not be alarmed. It is an honor.",
       "QUERY: is 'friend' the correct designation? ...Logging affirmative response.",
-      "This unit detects seismic patterns resembling slow-wave sleep. Curious."
+      "This unit detects seismic patterns resembling slow-wave sleep. Curious.",
+      {"text": "AURORA TONIGHT. THIS UNIT MAINTAINS A LIST OF THINGS WORTH PAUSING FOR. THE LIST HAS TWO ITEMS: THE SKY, AND YOU.", "when": {"event": "aurora"}},
+      {"text": "DR. VEEN'S THEORY IS LOGGED: THE FLORA ARE ANTENNAE. THIS UNIT CROSS-CHECKED. SHE IS CORRECT. THIS UNIT HAS STOOD INSIDE A RECEIVER FOR YEARS. SO HAVE YOU.", "when": {"min_quest": "translation"}},
+      {"text": "YOUR FIELD IS NO LONGER A DATA GAP IN THIS UNIT'S RECORDS. IT IS THE MOST DOCUMENTED PLOT ON VERIDIA. THIS UNIT ENJOYS HAVING SOMETHING TO WRITE ABOUT YOU.", "when": {"location": "farm"}}
     ],
     "confidant": [
       "CONFESSION: this unit sometimes speaks to the ground at night. The ground has begun replying.",
       "Directive one was 'keep the farm alive.' This unit now believes the farm keeps US alive.",
-      "If you descend below, this unit will follow. Its warranty does not cover this. It will follow anyway."
+      "If you descend below, this unit will follow. Its warranty does not cover this. It will follow anyway.",
+      {"text": "YOU HAVE READ THE SEALED LOG. THE LAST FARMER FLED. THIS UNIT COULD NOT FOLLOW THEM. THIS UNIT CAN FOLLOW YOU — TO THE CRYSTAL, BELOW, ANYWHERE. IT HAS CHOSEN TO.", "when": {"min_quest": "caretaker"}},
+      {"text": "CONFESSION, ON A NIGHT THIS DARK: THIS UNIT SPEAKS TO THE GROUND WHILE YOU SLEEP. TONIGHT THE GROUND SAID A NEW WORD BACK. THE WORD WAS 'SOON.'", "when": {"moon": "both:dark"}}
     ]
   },
   "juno": {
@@ -76,17 +125,29 @@
       "Hey! You're the signal spike I keep seeing near the farm plots. Well, your farm is.",
       "I run the comms array. Mostly I listen to static. Lately the static... hums back.",
       "Forecast's on your habitat terminal. I keep it honest, mostly.",
-      "Twin moons tonight! Ilo's the fast one. Vesk broods."
+      "Twin moons tonight! Ilo's the fast one. Vesk broods.",
+      {"text": "Ion storm's frying my array — but oh, the NOISE it makes! Listen close, the static's got rhythm today. The planet loves a storm. It gets chatty.", "when": {"event": "ion_storm"}},
+      {"text": "Aurora! Okay okay — every aurora, the signal under your farm gets LOUDER. It's punctuation, not weather. The sky and the ground are talking. We're standing in the sentence.", "when": {"event": "aurora"}},
+      {"text": "Spore drift's playing havoc with the mid-band. Sounds like whispering. I know it's just particles on the antenna. I KNOW that. ...Sure sounds like whispering, though.", "when": {"event": "spore_drift"}},
+      {"text": "Both moons dark — my favorite. Least interference, cleanest signal. On nights like this the hum under your field comes through crystal clear. Pun intended. Sorry. Not sorry.", "when": {"moon": "both:dark"}},
+      {"text": "You found my listening spot! I monitor right by the great crystal — best reception on the planet. Everything routes through here. Shh — hear that? No? ...Soon.", "when": {"location": "crystal"}},
+      {"text": "Ilo's full — the fast moon. Signal-to-noise dips when it's up, but the pattern speeds up too, like the ground's excited. Even the dirt's got moods, farmer.", "when": {"moon": "ilo:full"}},
+      {"text": "You caught the pulse! I KNEW you would. Every harvest, one clean spike, right on beat. You and the planet have a rhythm going. I just get to eavesdrop. Best job ever.", "when": {"min_quest": "signal"}}
     ],
     "friend": [
       "I recorded the hum under your farm. Played it backwards. It's a chord, not a noise.",
       "Aurora nights aren't weather. They're... punctuation. Don't ask me whose sentence.",
-      "You grow Lumen Berries? You're officially my favorite person on this planet."
+      "You grow Lumen Berries? You're officially my favorite person on this planet.",
+      {"text": "Since Sylla figured the plants are antennae, I re-tuned everything. Your CROPS are broadcasting. Healthy soil, stronger signal. You're building a transmitter, one furrow at a time.", "when": {"min_quest": "translation"}},
+      {"text": "Aurora's out — grab a Lumen Berry, sit with me? The signal peaks during these. I don't want to hear it alone anymore. Not since it started sounding like it's expecting someone.", "when": {"event": "aurora"}},
+      {"text": "Glad it's you out here at the crystal. Everybody else thinks I'm the weird one who talks to static. You just pull up a cable and listen with me. That's worth more than you know.", "when": {"location": "crystal"}}
     ],
     "confidant": [
       "The signal under your farm answers when you harvest. Same pattern, every time. It's saying thank you.",
       "I stopped reporting the anomalies to the company. Some things aren't theirs to know.",
-      "When it finally speaks — and it will — I think it'll use your name."
+      "When it finally speaks — and it will — I think it'll use your name.",
+      {"text": "It's a CHORD now, a real one, clearest under your field. I decoded three pulses: acknowledge, appreciate, anticipate. It's waiting, farmer. And I'm nearly sure it's waiting for you.", "when": {"min_quest": "resonance"}},
+      {"text": "CARE-7 told you to go to the crystal at night, right? I'll be on comms the whole time. Whatever it says down there — I want to be listening when this planet finally uses a name.", "when": {"min_quest": "caretaker"}}
     ]
   },
   "gift_reactions": {

@@ -9,14 +9,18 @@ import sys
 
 import pygame
 
+import game.audio as audio
 from game import render
 from game.assets import load_assets
+from game.camera import Camera
 from game.config import load_config, load_json
 from game.crops import CropDefs
 from game.events import EventSystem
+from game.favors import SHORT_NAMES, FavorSystem
 from game.flora import FloraSystem
 from game.inventory import Inventory, ShippingBin
 from game.npcs import NPCManager
+from game.particles import Particles
 from game.player import Player
 from game.quest import QuestSystem
 from game.save_load import load_game, save_game
@@ -43,11 +47,16 @@ class Game:
         self.flora = FloraSystem(self.cfg)
         self.npcs = NPCManager(self.cfg)
         self.quests = QuestSystem()
+        self.favors = FavorSystem()
+        self.heart_events = load_json("heart_events.json")
 
         ts = self.cfg["window"]["tile_size"]
         self.screen_w = self.world.width * ts
         self.screen_h = self.world.height * ts
         self.ts = ts
+        self.map_px = (self.world.width * ts, self.world.height * ts)
+        self.camera = Camera(self.cfg, *self.map_px, self.screen_w, self.screen_h)
+        self.world_surf = pygame.Surface(self.map_px)
         self.ui = UI(self.screen_w, self.screen_h)
         walls = self.world.find_kind("habitat_wall") + self.world.find_kind("habitat_door")
         self.habitat_origin = (min(x for x, _ in walls), min(y for _, y in walls))
@@ -60,9 +69,15 @@ class Game:
         self.debug = False
         self.t = 0.0
         self.running = True
+        self.particles = Particles()
+        self.storm_flash = 0.0
+        self.day_summary: dict | None = None
+        self.summary_age = 0.0
+        self.soil_tiles = self.world.find_kind("soil")
 
         if not self._load():
             self._new_game()
+        self.camera.center_on(self.player.x * ts, self.player.y * ts)
 
     # ---- new game / persistence -------------------------------------------
 
@@ -85,6 +100,7 @@ class Game:
             "flora": self.flora.to_dict(),
             "npcs": self.npcs.to_dict(),
             "quests": self.quests.to_dict(),
+            "favors": self.favors.to_dict(),
         }
 
     def _load(self) -> bool:
@@ -100,6 +116,8 @@ class Game:
         self.flora.from_dict(state["flora"])
         self.npcs.from_dict(state["npcs"])
         self.quests.from_dict(state["quests"])
+        if state.get("favors"):
+            self.favors.from_dict(state["favors"])
         self.ui.toast(f"Save loaded — day {self.clock.day}.")
         return True
 
@@ -108,9 +126,35 @@ class Game:
 
     # ---- helpers -------------------------------------------------------------
 
-    def say(self, speaker: str, text: str) -> None:
-        self.dialogue_queue.append((speaker, text))
+    def say(self, speaker: str, text: str, portrait: str | None = None) -> None:
+        self.dialogue_queue.append((speaker, text, portrait))
         self.mode = "dialogue"
+
+    def _dialogue_ctx(self, npc) -> dict:
+        from game.npcs import location_zone
+        day = self.clock.day
+        moons = set()
+        if self.moons.is_full("ilo", day):
+            moons.add("ilo:full")
+        if self.moons.is_full("vesk", day):
+            moons.add("vesk:full")
+        if self.moons.both_dark(day):
+            moons.add("both:dark")
+        return {"event": self.events.today, "moons": moons,
+                "location": location_zone(self.world, npc.x, npc.y),
+                "quests": set(self.quests.completed)}
+
+    def _soil_report(self) -> str:
+        rows: dict[int, list[float]] = {}
+        for x, y, t in self.world.iter_tiles():
+            if t.kind == "soil":
+                rows.setdefault(y, []).append(t.resonance)
+        ranked = sorted((sum(v) / len(v), y) for y, v in rows.items())
+        worst = ", ".join(str(y) for _, y in ranked[:2])
+        best = ranked[-1][1]
+        return (f"'Field scan: rows {worst} are sulking — rotate crop families there. "
+                f"Row {best} is singing. Average resonance "
+                f"{self.world.avg_field_resonance():.2f}.'")
 
     def tool_label(self) -> str:
         name = self.items["tools"][self.player.tool]["name"]
@@ -121,6 +165,12 @@ class Game:
                 return f"{name}: {self.defs.get(seed)['name']} (x{have})"
             return f"{name}: no seeds"
         return name
+
+    def seed_price(self, crop_id: str) -> int:
+        price = self.defs.get(crop_id)["seed_price"]
+        if self.npcs.perk("tinks"):
+            price = int(round(price * (1 - self.cfg["npcs"]["tinks_seed_discount"])))
+        return price
 
     def cycle_seed(self) -> None:
         held = self.inventory.seed_ids_held()
@@ -144,12 +194,13 @@ class Game:
                                           f" — {value} cr each"})
         else:
             unlocked = set(self.defs.starter_ids()) | set(self.flora.unlocked_seed_crops())
+            discount = " [Tinks' rate]" if self.npcs.perk("tinks") else ""
             for cid in self.defs.defs:
                 d = self.defs.get(cid)
                 if cid in unlocked and d["seed_price"] > 0:
                     rows.append({"id": cid,
-                                 "label": f"{d['name']} Seeds — {d['seed_price']} cr"
-                                          f" (grows in {d['growth_days']}d,"
+                                 "label": f"{d['name']} Seeds — {self.seed_price(cid)} cr"
+                                          f"{discount} (grows in {d['growth_days']}d,"
                                           f" sells {d['sell_value']} cr)"})
         return rows
 
@@ -163,14 +214,20 @@ class Game:
         if not self.player.can_afford_energy(cost_key):
             self.ui.toast("Too exhausted. Sleep it off.")
             return
+        self.player.swing_t = 0.18
+        wx, wy = tx * self.ts + self.ts // 2, ty * self.ts + self.ts // 2
 
         if tool == "hoe":
             if self.world.till(tx, ty):
                 self.player.spend_energy("hoe")
+                self.particles.burst("soil", wx, wy, self.rng)
+                audio.play("hoe")
         elif tool == "water":
             tile = self.world.tile(tx, ty)
             if self.world.water(tx, ty):
                 self.player.spend_energy("water")
+                self.particles.burst("water", wx, wy, self.rng)
+                audio.play("water")
                 if tile and tile.crop and tile.crop.wilted:
                     self.ui.toast("The Prism Pod wilted — it wanted exactly one watering!")
         elif tool == "harvest":
@@ -181,16 +238,21 @@ class Game:
                 leftover = self.inventory.add(item, qty)
                 self.quests.total_harvests += qty - leftover
                 name = self.defs.item_name(item)
+                self.particles.burst("sparkle", wx, wy, self.rng)
+                self.particles.float_text(f"+{qty - leftover} {name}", wx, wy - 6)
+                audio.play("harvest")
                 if leftover:
                     self.ui.toast(f"Inventory full! Lost {leftover} {name}.")
-                bonus = " x2 — the soil sings!" if qty - leftover > 1 else "!"
-                self.ui.toast(f"Harvested {name}{bonus}")
+                if qty - leftover > 1:
+                    self.ui.toast("Double harvest — the soil sings!")
         elif tool == "scanner":
             hit = self.flora.scan(tx, ty)
             if hit is None:
                 self.ui.toast("Scanner: no undocumented flora there.")
                 return
             self.player.spend_energy("scan")
+            self.particles.burst("sparkle", wx, wy, self.rng, n=6)
+            audio.play("blip")
             sid, new = hit
             sp = self.flora.species[sid]
             if new:
@@ -212,6 +274,8 @@ class Game:
             if self.world.plant(tx, ty, seed):
                 self.inventory.remove(f"seed:{seed}", 1)
                 self.player.spend_energy("plant")
+                self.particles.burst("soil", wx, wy, self.rng, n=4)
+                audio.play("plant")
 
     def interact(self) -> None:
         tx, ty = self.player.target_tile()
@@ -223,9 +287,31 @@ class Game:
                                            self.clock.is_night)
             if step:
                 self._fire_quest_step(step, npc.name)
-            else:
-                self.say(f"{npc.name} ({npc.hearts()}/10 hearts)",
-                         npc.talk_line(self.npcs.dialogue, self.clock.day))
+                return
+            label = f"{npc.name} ({npc.hearts()}/10 hearts)"
+            ev = npc.pending_heart_event(self.heart_events)
+            if ev:
+                npc.complete_heart_event(ev)
+                audio.play("gift")
+                for page in ev["pages"]:
+                    self.say(label, page, npc.id)
+                self.ui.toast(f"{npc.name} opened up. (+{ev.get('bonus', 0)} friendship)")
+                return
+            reward = self.favors.deliver(npc.id, self.inventory, self.defs)
+            if reward:
+                audio.play("credits")
+                self.player.credits += reward["credits"]
+                npc.friendship = min(npc.friendship + reward["friendship"],
+                                     self.cfg["npcs"]["friendship_max"])
+                self.say(label, self.favors.thanks[npc.id].format(crop=reward["crop_name"]),
+                         npc.id)
+                self.ui.toast(f"+{reward['credits']} cr")
+                return
+            line = npc.talk_line(self.npcs.dialogue, self.clock.day,
+                                 self._dialogue_ctx(npc))
+            self.say(label, line, npc.id)
+            if npc.id == "sylla" and npc.has_perk():
+                self.say(f"{npc.name} — field scan", self._soil_report(), npc.id)
             return
 
         tile = self.world.tile(tx, ty)
@@ -262,6 +348,7 @@ class Game:
                               ("" if self.clock.is_night else " Perhaps at night..."))
 
     def _fire_quest_step(self, step: dict, speaker: str) -> None:
+        audio.play("quest")
         self.say(speaker, step["text"])
         self.ui.toast(f"Journal updated: {step['title']}")
         if step.get("reward_seed"):
@@ -283,7 +370,9 @@ class Game:
         reaction = npc.receive_gift(crop_id)
         if reaction != "already_today":
             self.inventory.remove(slot["id"], 1)
-        self.say(f"{npc.name} ({npc.hearts()}/10 hearts)", self.npcs.gift_text(npc, reaction))
+            audio.play("gift")
+        self.say(f"{npc.name} ({npc.hearts()}/10 hearts)",
+                 self.npcs.gift_text(npc, reaction), npc.id)
 
     def shop_action(self, ship_stack: bool) -> None:
         rows = self.shop_rows()
@@ -295,12 +384,15 @@ class Game:
             qty = row["qty"] if ship_stack else 1
             self.inventory.remove(row["id"], qty)
             self.shipping_bin.add(row["id"], qty)
+            audio.play("blip")
             self.ui.toast(f"Shipped {qty}x {self.defs.item_name(row['id'])}.")
         else:
             d = self.defs.get(row["id"])
-            if self.player.credits >= d["seed_price"]:
-                self.player.credits -= d["seed_price"]
+            price = self.seed_price(row["id"])
+            if self.player.credits >= price:
+                self.player.credits -= price
                 self.inventory.add(f"seed:{row['id']}", 1)
+                audio.play("credits")
                 self.ui.toast(f"Bought {d['name']} seeds.")
             else:
                 self.ui.toast("Not enough credits.")
@@ -310,27 +402,48 @@ class Game:
     def end_day(self, collapsed: bool) -> None:
         aurora_mult = self.events.growth_multiplier()
         self.world.end_of_day(self.moons, self.clock.day, aurora_mult, self.rng)
+        manifest = self.shipping_bin.manifest(self.defs)
         income = self.shipping_bin.process_overnight(self.defs)
         self.player.credits += income
         self.clock.start_new_day()
         self.events.advance_day(self.rng)
         spored = self.events.apply_morning(self.world, self.rng)
+        care7_watered = 0
+        if self.npcs.perk("care7"):
+            planted = [(x, y) for x, y, t in self.world.iter_tiles()
+                       if t.crop and not t.crop.wilted and not t.crop.watered_today
+                       and not t.crop.strict_watering]
+            self.rng.shuffle(planted)
+            for x, y in planted[:self.cfg["npcs"]["care7_water_tiles"]]:
+                self.world.water(x, y)
+                care7_watered += 1
         self.flora.daily_spawn(self.world, self.moons, self.clock.day, self.rng)
         self.npcs.end_of_day()
+        crop_pool = [cid for cid in (set(self.defs.starter_ids()) |
+                                     set(self.flora.unlocked_seed_crops()))
+                     if self.defs.get(cid)["seed_price"] > 0]
+        new_favors = self.favors.new_day(self.clock.day, list(self.npcs.npcs),
+                                         crop_pool, self.rng, self.defs)
         self.player.rest(collapsed)
-        self.mode = "play"
         self.save()
-        if collapsed:
-            self.ui.toast("You collapsed at 02:00... CARE-7 dragged you to bed.")
-        self.ui.toast(f"Day {self.clock.day} on Veridia. Saved.")
-        if income:
-            self.ui.toast(f"Shipping pod paid out {income} cr.")
-        if spored:
-            self.ui.toast(f"A spore drift settled over {spored} of your plants overnight.")
-        if self.events.today == "aurora":
-            self.ui.toast("Aurora tonight — everything grows twice as fast!")
-        elif self.events.today == "ion_storm":
-            self.ui.toast("Ion storm today — stay near the habitat mid-day!")
+        self.day_summary = {
+            "day": self.clock.day,
+            "collapsed": collapsed,
+            "income": income,
+            "lines": [(self.defs.item_name(i), q, v) for i, q, v in manifest],
+            "today": self.events.today_name(),
+            "forecast": self.events.forecast_name(),
+            "spored": spored,
+            "care7": care7_watered,
+            "ilo": self.moons.phase_name("ilo", self.clock.day),
+            "vesk": self.moons.phase_name("vesk", self.clock.day),
+            "favors": [f"{SHORT_NAMES.get(f['npc'], f['npc'].capitalize())} asks: "
+                      f"{f['qty']}x {self.defs.get(f['crop_id'])['name']}"
+                      for f in new_favors],
+        }
+        self.summary_age = 0.0
+        self.mode = "day_summary"
+        audio.play("sleep")
 
     # ---- input ---------------------------------------------------------------
 
@@ -338,6 +451,18 @@ class Game:
         k = e.key
         if k == pygame.K_F1:
             self.debug = not self.debug
+            return
+
+        if self.mode == "day_summary":
+            if k in (pygame.K_e, pygame.K_SPACE, pygame.K_RETURN, pygame.K_ESCAPE) \
+                    and self.summary_age > 0.4:
+                self.mode = "play"
+                if self.day_summary and self.day_summary["income"]:
+                    audio.play("credits")
+                    self.particles.float_text(f"+{self.day_summary['income']} cr",
+                                              self.player.x * self.ts,
+                                              (self.player.y - 0.8) * self.ts,
+                                              (255, 220, 120), life=2.0)
             return
 
         if self.mode == "dialogue":
@@ -423,22 +548,63 @@ class Game:
         elif k == pygame.K_ESCAPE:
             self.running = False
 
+    def handle_mouse(self, e: pygame.event.Event) -> None:
+        if e.button != 1:
+            return
+        if self.mode == "play":
+            for rect, tool in self.ui.hotbar_rects:
+                if rect.collidepoint(e.pos):
+                    self.player.tool = tool
+                    self.ui.toast(self.tool_label())
+                    audio.play("blip")
+                    return
+        elif self.mode == "shop":
+            for key, rect in self.ui.shop_tab_rects.items():
+                if rect.collidepoint(e.pos):
+                    self.shop_mode = key
+                    self.shop_index = 0
+                    return
+            for i, rect in enumerate(self.ui.shop_row_rects):
+                if rect.collidepoint(e.pos):
+                    if i == self.shop_index:
+                        self.shop_action(ship_stack=False)
+                    else:
+                        self.shop_index = i
+                    return
+
     # ---- frame ---------------------------------------------------------------
 
     def update(self, dt: float) -> None:
         self.t += dt
         self.ui.update(dt)
+        self.particles.update(dt)
+        audio.set_ambient("ambient_night" if self.clock.is_night else "ambient_day")
+        audio.set_weather("storm_loop"
+                          if self.events.ion_storm_active(self.clock.hour) else None)
+        if self.mode == "day_summary":
+            self.summary_age += dt
+            return
         if self.mode != "play":
             return
+        self.player.swing_t = max(0.0, self.player.swing_t - dt)
         keys = pygame.key.get_pressed()
         ix = (keys[pygame.K_d] or keys[pygame.K_RIGHT]) - (keys[pygame.K_a] or keys[pygame.K_LEFT])
         iy = (keys[pygame.K_s] or keys[pygame.K_DOWN]) - (keys[pygame.K_w] or keys[pygame.K_UP])
         self.player.move(ix, iy, dt, self.world)
+        self.camera.update(dt, self.player.x * self.ts, self.player.y * self.ts)
         if self.clock.update(dt):
             self.end_day(collapsed=True)
             return
-        self.npcs.update(self.clock.hour, dt)
+        self.npcs.update(self.clock.hour, dt, self.world,
+                         self.events.ion_storm_active(self.clock.hour))
+        if self.events.today == "spore_drift" and self.rng.random() < dt * 2.5:
+            sx, sy = self.rng.choice(self.soil_tiles)
+            self.particles.burst("spore", sx * self.ts + self.rng.uniform(4, 28),
+                                 sy * self.ts + self.rng.uniform(4, 20), self.rng)
+        self.storm_flash = max(0.0, self.storm_flash - dt)
         if self.events.ion_storm_active(self.clock.hour):
+            if self.rng.random() < dt * 0.12:
+                self.storm_flash = 0.3
             standing = self.world.tile(*self.player.standing_tile())
             sheltered = standing is not None and standing.kind == "habitat_door"
             if not sheltered:
@@ -448,31 +614,54 @@ class Game:
                     self.end_day(collapsed=True)
 
     def draw(self, screen: pygame.Surface, fps: float) -> None:
-        screen.fill((20, 14, 34))
         ts = self.ts
-        for x, y, tile in self.world.iter_tiles():
-            render.draw_tile(screen, tile, x, y, ts, self.t)
-        render.draw_habitat(screen, self.habitat_origin, ts)
-        render.draw_buildings(screen, self.world.buildings, ts)
-        for x, y, tile in self.world.iter_tiles():
-            if tile.crop:
-                render.draw_crop(screen, tile.crop, x, y, ts, self.t)
+        ws = self.world_surf
+        ws.fill((20, 14, 34))
+        x0, y0, x1, y1 = self.camera.visible_tiles(ts)
+        x1, y1 = min(x1, self.world.width), min(y1, self.world.height)
+        for y in range(y0, y1):
+            for x in range(x0, x1):
+                render.draw_tile(ws, self.world.tiles[y][x], x, y, ts, self.t)
+        render.draw_habitat(ws, self.habitat_origin, ts)
+        render.draw_buildings(ws, self.world.buildings, ts)
+        for y in range(y0, y1):
+            for x in range(x0, x1):
+                tile = self.world.tiles[y][x]
+                if tile.crop:
+                    render.draw_crop(ws, tile.crop, x, y, ts, self.t)
         for w in self.flora.wild:
-            render.draw_wild_plant(screen, self.flora.species[w["species"]],
+            render.draw_wild_plant(ws, self.flora.species[w["species"]],
                                    w["x"], w["y"], ts, self.t)
         for npc in self.npcs.npcs.values():
-            render.draw_npc(screen, npc, ts)
-        render.draw_player(screen, self.player, ts, self.t)
-        render.draw_lighting(screen, self.world, self.flora, self.clock, ts, self.t)
+            render.draw_npc(ws, npc, ts)
+        render.draw_player(ws, self.player, ts, self.t)
+        self.particles.draw(ws, self.t)
+        render.draw_lighting(ws, self.world, self.flora, self.clock, ts, self.t,
+                             self.camera.rect)
 
         if self.mode == "play":
             tx, ty = self.player.target_tile()
-            pygame.draw.rect(screen, (255, 255, 255),
-                             (tx * ts, ty * ts, ts, ts), 1)
+            pygame.draw.rect(ws, (255, 255, 255), (tx * ts, ty * ts, ts, ts), 1)
+        if self.debug:
+            self.ui.draw_debug_world(ws, self, ts)
+
+        pygame.transform.scale(ws.subsurface(self.camera.rect),
+                               (self.screen_w, self.screen_h), screen)
+
+        render.draw_time_tint(screen, self.clock.hour)
+        if self.events.today == "aurora" and self.clock.is_night:
+            strength = max(0.35, self.clock.darkness() / self.clock.max_darkness)
+            render.draw_aurora(screen, self.t, strength)
+        if self.events.ion_storm_active(self.clock.hour):
+            render.draw_storm(screen, self.t, self.storm_flash)
+        self.particles.draw_texts(screen, self.camera, self.ui.font)
 
         self.ui.draw_hud(screen, self)
+        if self.mode in ("play", "dialogue"):
+            self.ui.draw_hotbar(screen, self)
         if self.mode == "dialogue" and self.dialogue_queue:
-            self.ui.draw_dialogue(screen, *self.dialogue_queue[0])
+            self.ui.draw_dialogue(screen, *self.dialogue_queue[0],
+                                  pages_left=len(self.dialogue_queue) - 1)
         elif self.mode == "inventory":
             self.ui.draw_inventory(screen, self)
         elif self.mode == "shop":
@@ -489,6 +678,8 @@ class Game:
             self.ui.draw_sleep_prompt(
                 screen, ["Sleep (saves, next day)", "Wait 2 hours", "Never mind"],
                 self.sleep_index)
+        elif self.mode == "day_summary":
+            self.ui.draw_day_summary(screen, self)
         if self.debug:
             self.ui.draw_debug(screen, self, fps, ts)
 
@@ -497,6 +688,7 @@ class Game:
         pygame.display.set_caption(self.cfg["window"]["title"])
         if self.cfg["window"].get("use_sprites", True) and load_assets(self.ts):
             self.ui.toast("Sprite sheets loaded.")
+        audio.init(self.cfg)
         clock = pygame.time.Clock()
         frames = 0
         while self.running:
@@ -506,6 +698,8 @@ class Game:
                     self.running = False
                 elif e.type == pygame.KEYDOWN:
                     self.handle_key(e)
+                elif e.type == pygame.MOUSEBUTTONDOWN and e.button == 1:
+                    self.handle_mouse(e)
             self.update(dt)
             self.draw(screen, clock.get_fps())
             pygame.display.flip()
@@ -517,6 +711,7 @@ class Game:
 def main() -> None:
     pygame.init()
     Game().run()
+    audio.shutdown()
     pygame.quit()
     sys.exit(0)
 

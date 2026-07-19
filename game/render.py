@@ -185,6 +185,14 @@ def draw_buildings(surf: pygame.Surface, buildings: list[dict], ts: int) -> None
             surf.blit(img, (b["x"] * ts, (b["y"] + b["h"]) * ts - img.get_height()))
 
 
+def _ripe_glint(surf: pygame.Surface, x: int, y: int, ts: int, t: float) -> None:
+    """Blinking sparkle so ripe crops read as harvestable at a glance."""
+    if math.sin(t * 3.5 + x * 1.3 + y * 0.7) > 0.55:
+        gx, gy = x * ts + ts - 7, y * ts + 7
+        pygame.draw.line(surf, (255, 255, 230), (gx - 3, gy), (gx + 3, gy))
+        pygame.draw.line(surf, (255, 255, 230), (gx, gy - 3), (gx, gy + 3))
+
+
 def draw_crop(surf: pygame.Surface, crop, x: int, y: int, ts: int, t: float) -> None:
     cx, cy = x * ts + ts // 2, y * ts + ts // 2
     color = tuple(crop.d["color"])
@@ -206,6 +214,7 @@ def draw_crop(surf: pygame.Surface, crop, x: int, y: int, ts: int, t: float) -> 
         if crop.ripe:
             pygame.draw.line(surf, color, (bulge.centerx - 4, bulge.centery),
                              (bulge.centerx + 4, bulge.centery), 2)
+            _ripe_glint(surf, x, y, ts, t)
         return
 
     if not crop.ripe:
@@ -223,6 +232,7 @@ def draw_crop(surf: pygame.Surface, crop, x: int, y: int, ts: int, t: float) -> 
                 pygame.draw.ellipse(surf, (40, 30, 45), shadow)
                 bottom += int(-ts // 4 + math.sin(t * 2.2 + x * 1.7) * 2)
             surf.blit(img, img.get_rect(midbottom=(cx, bottom)))
+            _ripe_glint(surf, x, y, ts, t)
             return
 
     if frac < 0.34:  # sprout
@@ -266,6 +276,8 @@ def draw_crop(surf: pygame.Surface, crop, x: int, y: int, ts: int, t: float) -> 
             pygame.draw.circle(surf, shade, (int(cx + math.cos(a) * 5 * size),
                                              int(py + math.sin(a) * 5 * size)), 3)
         pygame.draw.circle(surf, (255, 250, 220), (cx, int(py)), 2)
+    if crop.ripe:
+        _ripe_glint(surf, x, y, ts, t)
 
 
 def draw_wild_plant(surf: pygame.Surface, species: dict, x: int, y: int, ts: int, t: float) -> None:
@@ -287,6 +299,11 @@ PLAYER_ANIM_FPS = 7
 
 def draw_player(surf: pygame.Surface, player, ts: int, t: float) -> None:
     px, py = int(player.x * ts), int(player.y * ts)
+    swing = getattr(player, "swing_t", 0.0)
+    if swing > 0:
+        lunge = int(5 * math.sin(min(swing / 0.18, 1.0) * math.pi))
+        px += player.facing[0] * lunge
+        py += player.facing[1] * lunge
     facing = FACING_NAMES.get(player.facing, "down")
     frame = int(t * PLAYER_ANIM_FPS) % 4 if getattr(player, "moving", False) else 0
     sprite = SPRITES.get(f"player:{facing}:{frame}")
@@ -304,28 +321,119 @@ def draw_player(surf: pygame.Surface, player, ts: int, t: float) -> None:
     pygame.draw.rect(surf, (90, 200, 220), visor, border_radius=2)
 
 
+_EMOTE_FONT: pygame.font.Font | None = None
+
+
+def _draw_emote(surf: pygame.Surface, cx: int, top: int, emote: str) -> None:
+    global _EMOTE_FONT
+    if _EMOTE_FONT is None:
+        _EMOTE_FONT = pygame.font.SysFont("consolas", 10, bold=True)
+    img = _EMOTE_FONT.render(emote, True, (30, 24, 50))
+    rect = pygame.Rect(0, 0, img.get_width() + 8, img.get_height() + 4)
+    rect.midbottom = (cx + 10, top - 2)
+    pygame.draw.rect(surf, (240, 238, 250), rect, border_radius=4)
+    pygame.draw.rect(surf, (120, 110, 160), rect, 1, border_radius=4)
+    surf.blit(img, img.get_rect(center=rect.center))
+
+
 def draw_npc(surf: pygame.Surface, npc, ts: int) -> None:
+    if getattr(npc, "hidden", False):
+        return
     sprite = SPRITES.get(f"npc:{npc.id}")
     px, py = int(npc.x * ts + ts // 2), int(npc.y * ts + ts // 2)
     if sprite:
-        surf.blit(sprite, sprite.get_rect(midbottom=(px, int(npc.y * ts) + ts)))
+        rect = sprite.get_rect(midbottom=(px, int(npc.y * ts) + ts))
+        surf.blit(sprite, rect)
+        top = rect.top
+    else:
+        color = tuple(npc.d["color"])
+        body = pygame.Rect(0, 0, int(ts * 0.65), int(ts * 0.75))
+        body.center = (px, py)
+        pygame.draw.rect(surf, color, body, border_radius=6)
+        pygame.draw.rect(surf, _lerp(color, (0, 0, 0), 0.4), body, 1, border_radius=6)
+        pygame.draw.circle(surf, (245, 240, 235), (px, body.y + 4), 3)
+        top = body.top
+    emote = getattr(npc, "emote", None)
+    if emote:
+        _draw_emote(surf, px, top, emote)
+
+
+# ---- screen-space atmosphere (drawn after the camera scale, before UI) --------
+
+DAWN_COLOR = (255, 148, 88)
+DUSK_COLOR = (184, 96, 200)
+_SCREEN_TINT_CACHE: dict[tuple, pygame.Surface] = {}
+
+
+def time_tint(hour: float) -> tuple[tuple[int, int, int], int] | None:
+    """Warm dawn / violet dusk tint for the current hour, or None at midday/night."""
+    if hour < 8.0:
+        a = int(64 * (1.0 - (hour - 6.0) / 2.0))
+        return (DAWN_COLOR, a) if a > 0 else None
+    if 17.0 <= hour < 20.0:
+        return DUSK_COLOR, int(56 * (hour - 17.0) / 3.0)
+    if 20.0 <= hour < 23.0:
+        a = int(56 * (1.0 - (hour - 20.0) / 3.0))
+        return (DUSK_COLOR, a) if a > 0 else None
+    return None
+
+
+def draw_time_tint(screen: pygame.Surface, hour: float) -> None:
+    tint = time_tint(hour)
+    if tint is None:
         return
-    color = tuple(npc.d["color"])
-    body = pygame.Rect(0, 0, int(ts * 0.65), int(ts * 0.75))
-    body.center = (px, py)
-    pygame.draw.rect(surf, color, body, border_radius=6)
-    pygame.draw.rect(surf, _lerp(color, (0, 0, 0), 0.4), body, 1, border_radius=6)
-    pygame.draw.circle(surf, (245, 240, 235), (px, body.y + 4), 3)
+    color, alpha = tint
+    alpha = max(0, min(255, alpha)) // 4 * 4   # bucket for caching
+    if alpha == 0:
+        return
+    key = (screen.get_size(), color, alpha)
+    s = _SCREEN_TINT_CACHE.get(key)
+    if s is None:
+        s = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+        s.fill((*color, alpha))
+        _SCREEN_TINT_CACHE[key] = s
+    screen.blit(s, (0, 0))
 
 
-def draw_lighting(surf: pygame.Surface, world, flora, clock, ts: int, t: float) -> None:
-    """Violet night overlay plus additive bioluminescent glow (never fully dark)."""
+def draw_aurora(screen: pygame.Surface, t: float, strength: float) -> None:
+    """Drifting green/blue shimmer bands on aurora nights."""
+    w, h = screen.get_size()
+    band = pygame.Surface((w, h), pygame.SRCALPHA)
+    for i in range(3):
+        yc = h * 0.18 + i * h * 0.2 + math.sin(t * 0.35 + i * 2.1) * 46
+        color = (80, 230, 150, int(26 * strength)) if i % 2 == 0 \
+            else (120, 190, 255, int(18 * strength))
+        top = [(x, yc + math.sin(t * 0.7 + x * 0.012 + i * 1.7) * 24 - 30)
+               for x in range(0, w + 64, 64)]
+        bot = [(x, y + 60) for x, y in reversed(top)]
+        pygame.draw.polygon(band, color, top + bot)
+    screen.blit(band, (0, 0))
+
+
+def draw_storm(screen: pygame.Surface, t: float, flash: float) -> None:
+    """Ion-storm flicker plus a decaying white lightning flash (0..~0.3)."""
+    flicker = 16 + 9 * math.sin(t * 11.0) + 6 * math.sin(t * 23.7)
+    if flicker > 0:
+        s = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+        s.fill((38, 38, 72, int(flicker)))
+        screen.blit(s, (0, 0))
+    if flash > 0:
+        s = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+        s.fill((255, 255, 255, int(200 * min(1.0, flash * 4.0))))
+        screen.blit(s, (0, 0))
+
+
+def draw_lighting(surf: pygame.Surface, world, flora, clock, ts: int, t: float,
+                  view_rect: pygame.Rect | None = None) -> None:
+    """Violet night overlay plus additive bioluminescent glow (never fully dark).
+    When view_rect is given, work is confined to that world-space area."""
     darkness = clock.darkness()
     if darkness <= 0:
         return
-    overlay = pygame.Surface(surf.get_size(), pygame.SRCALPHA)
+    area = view_rect if view_rect is not None else surf.get_rect()
+    overlay = pygame.Surface(area.size, pygame.SRCALPHA)
     overlay.fill((*NIGHT_COLOR, darkness))
-    surf.blit(overlay, (0, 0))
+    surf.blit(overlay, area.topleft)
 
     glow_strength = darkness / clock.max_darkness
     glows: list[tuple[int, int, tuple[int, int, int], int]] = []
@@ -337,11 +445,16 @@ def draw_lighting(surf: pygame.Surface, world, flora, clock, ts: int, t: float) 
         crop = tile.crop
         if crop and crop.ripe and "glow_when_ripe" in crop.d.get("traits", []):
             glows.append((x, y, tuple(c // 3 for c in crop.d["color"]), ts * 2))
-    glow = pygame.Surface(surf.get_size(), pygame.SRCALPHA)
+    glow = pygame.Surface(area.size, pygame.SRCALPHA)
+    drew = False
     for x, y, color, radius in glows:
         cx, cy = x * ts + ts // 2, y * ts + ts // 2
+        if not area.inflate(radius * 2, radius * 2).collidepoint(cx, cy):
+            continue
+        drew = True
         pulse = 0.8 + 0.2 * math.sin(t * 2 + x * 3 + y)
         for r, f in ((radius, 0.35), (radius * 2 // 3, 0.6), (radius // 3, 1.0)):
             col = tuple(int(c * f * pulse * glow_strength) for c in color)
-            pygame.draw.circle(glow, col, (cx, cy), r)
-    surf.blit(glow, (0, 0), special_flags=pygame.BLEND_RGB_ADD)
+            pygame.draw.circle(glow, col, (cx - area.x, cy - area.y), r)
+    if drew:
+        surf.blit(glow, area.topleft, special_flags=pygame.BLEND_RGB_ADD)

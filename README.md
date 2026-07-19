@@ -20,6 +20,11 @@ uv run python main.py
 
 (Or `pip install pygame-ce` and `python main.py`.)
 
+Run it from a **Windows** shell (PowerShell/cmd). From WSL, use `./run.sh` instead — running
+`uv run` directly in WSL tries to rebuild the Windows-format `.venv` as a Linux one and dies
+with `Input/output error (os error 5)`, corrupting the venv along the way. `run.sh` gives WSL
+its own separate environment (`.venv-wsl`) so the two never collide.
+
 Tests and the headless smoke run:
 
 ```
@@ -55,6 +60,7 @@ glibc version and newer.
 | WASD / Arrows | Move (4-direction) |
 | 1 / 2 / 3 / 4 / 5 | Terra-Hoe / Watering Canister / Harvester / Flora Scanner / Seed Planter |
 | Tab | Cycle selected seed (for the planter) |
+| Mouse (click) | Select tool from hotbar; click shop rows/tabs |
 | Space | Use current tool on the highlighted tile |
 | E | Interact (talk, terminal, shipping pod, habitat door, great crystal) / advance dialogue |
 | G | Gift your first crop stack to a nearby NPC |
@@ -105,6 +111,9 @@ build.py              # PyInstaller build script (standalone executables)
 game/
   config.py           # JSON loading + source/frozen path resolution
   assets.py           # sprite sheet slicing (assets/ -> render.SPRITES)
+  camera.py           # smooth-follow 2x zoom camera
+  audio.py            # SFX + ambient/weather loops (assets/audio)
+  particles.py        # particle bursts + floating text
   world.py            # tile grid, farming actions, soil resonance
   player.py           # movement, collision, energy, tools
   crops.py            # crop defs, growth, moon affinities, mutations
@@ -118,7 +127,8 @@ game/
   render.py           # ALL drawing (drop sprite sheets in here later)
   ui.py               # HUD, panels, dialogue, debug overlay
 data/                 # config, map, crops, items, flora, npcs, dialogue, quests (all editable)
-assets/               # sprite sheets (player, tileset, NPCs, buildings)
+assets/               # sprite sheets (player, tileset, NPCs, buildings) + audio/ (synth WAVs)
+tools/                # gen_audio.py — regenerates assets/audio deterministically
 saves/                # savegame.json (created at runtime, next to the executable when frozen)
 tests/                # pytest suite + headless smoke run
 .github/workflows/    # build.yml — CI that builds Windows + Linux binaries

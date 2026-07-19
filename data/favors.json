@@ -1,0 +1,22 @@
+{
+  "chance_per_day": 0.4,
+  "duration_days": 2,
+  "max_active": 2,
+  "qty_range": [2, 4],
+  "reward_credit_mult": 1.6,
+  "reward_friendship": 40,
+  "requests": {
+    "sylla": "Could you bring me {qty} {crop}? I want to run a resonance assay.",
+    "hux": "Need {qty} {crop} for the crew mess. Mining's hungry work.",
+    "tinks": "Psst — got a buyer lined up for {qty} {crop}. Fetch 'em and I'll make it worth your while!",
+    "care7": "REQUEST: {qty} UNITS OF {crop} NEEDED FOR NUTRIENT SYNTHESIS. YOUR ASSISTANCE IS APPRECIATED.",
+    "juno": "Oh! Oh! Could you grab me {qty} {crop}? I want to test something with the signal array, it's gonna be great!"
+  },
+  "thanks": {
+    "sylla": "Wonderful — this {crop} is exactly what the assay needed. Thank you.",
+    "hux": "Ha! Good haul. Crew'll eat well tonight.",
+    "tinks": "That's the stuff! Pleasure doing business with you.",
+    "care7": "DELIVERY CONFIRMED. THANK YOU FOR YOUR ASSISTANCE.",
+    "juno": "Yes! Perfect timing — this is gonna make the signal array so much better!"
+  }
+}

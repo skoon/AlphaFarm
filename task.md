@@ -60,9 +60,53 @@
 - [x] .github/workflows/build.yml — CI builds Windows + Linux, releases on v* tags
 - [x] Verified: exe runs standalone from a clean dir (bundled assets load); 86 tests pass
 
-## Follow-up ideas (not started)
-- [ ] SciFiCreatures_NES_4x30_alphaBG.png — no creature system yet; could become
-      night critters or ion-storm hazards
+## Polish & Depth roadmap (see implementation_plan.md)
+
+### Phase A — Game feel
+- [x] A1 Following camera at 2x zoom (game/camera.py, culled drawing)
+- [x] A2 Sound: tools/gen_audio.py -> assets/audio/ (12 WAVs), game/audio.py, hooks
+- [x] A3 Juice: particles, tool-swing feedback, floating text, ripe glint
+- [x] A4 Time-of-day tint + aurora/storm visuals
+- [x] A5 Sleep fade + day-summary card
+- [x] A6 Visual hotbar + panel mouse support (Sonnet subagent)
+- [x] Phase A tests/smoke/screenshots green (103 tests; dawn/dusk/aurora/storm/summary shots)
+
+### Phase B — NPCs as characters
+- [x] B1 Dialogue portraits + multi-page dialogue
+- [x] B2 Contextual dialogue conditions (npcs.py selector) + content pass (Opus:
+      ~13 conditional lines per NPC across tiers)
+- [x] B3 Heart events at 3/7 hearts (data/heart_events.json, fire once, persisted)
+- [x] B4 Favors (Sonnet subagent: game/favors.py, data/favors.json, terminal/journal
+      sections, day-summary lines, delivery on talk)
+- [x] B5 Perks: Tinks seed discount, Juno 2-day forecast, CARE-7 morning watering,
+      Sylla soil report (thresholds in config)
+- [x] B6 Life signs: BFS pathing (fixes NPCs-through-buildings bug), indoors at
+      night/storms, emotes + idle chats
+- [x] Phase B tests/smoke green (121 tests; portrait/outpost/terminal/night shots)
+
+### Phase C — Economy arc
+- [ ] C1 Tinks upgrade shop: tools II, pack, irrigation drones
+- [ ] C2 Bio-Kiln processing (data/recipes.json)
+- [ ] C3 Balance pass + test_balance.py; save migration v2
+- [ ] Phase C tests/smoke green
+
+### Phase D — Mine, endgame, QoL
+- [ ] D1 Mine map, minerals, fauna codex set (creatures sheet)
+- [ ] D2 Restoration bundles + ending
+- [ ] D3 Pause menu, options, save slots, title screen
+- [ ] Phase D tests/smoke green
+
+## Post-phase backlog (Scott, 2026-07-19)
+- [x] BUG: NPCs walk through buildings — FIXED in Phase B6 (BFS pathfinding; test
+      walks Sylla's full commute asserting she never enters a solid tile)
+- [ ] BUG: the outpost SHOP building can't be entered — needs a door interaction
+      (Tinks' shop UI, or an interior scene; consider alongside C1 Tinks upgrade shop)
+- [ ] Implement the BAR as a real place (door interaction/interior; Hux + evening
+      NPC schedules could route through it)
+- [ ] Replace synth ambient hum with real music — Scott is sourcing tracks; drop-in
+      files at assets/audio/ambient_day.wav / ambient_night.wav (same names), or add
+      an ogg/music channel if the tracks are long
+
+## Older follow-up ideas (unscheduled)
 - [ ] Interior habitat scene instead of door-tile shelter
-- [ ] Mouse support for shop/inventory
-- [ ] Sound (ambient hum, moon chimes)
+- [ ] Controller support (stretch, D3)

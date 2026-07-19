@@ -111,6 +111,7 @@ def load_assets(ts: int) -> bool:
         if npc.get("sprite") and path.exists():
             img = pygame.image.load(str(path)).convert_alpha()
             sprites[f"npc:{npc_id}"] = _cropped_to_height(img, int(ts * NPC_HEIGHT_TILES))
+            sprites[f"portrait:{npc_id}"] = _cropped_to_height(img, ts * 4)
     for b in load_json("map.json").get("buildings", []):
         path = ASSET_DIR / f"building_{b['image']}_384.png"
         if path.exists():

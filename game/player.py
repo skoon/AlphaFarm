@@ -21,6 +21,7 @@ class Player:
         self.tool: str = "hoe"
         self.selected_seed: str | None = None
         self.moving: bool = False  # drives walk animation; not persisted
+        self.swing_t: float = 0.0  # tool-swing feedback timer; not persisted
 
     def move(self, ix: int, iy: int, dt: float, world) -> None:
         """4-direction movement with axis-separated collision; ix/iy in {-1,0,1}."""

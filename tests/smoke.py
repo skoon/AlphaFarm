@@ -45,7 +45,11 @@ assert game.mode == "play"
 key(pygame.K_F1)                      # debug overlay on
 game.run(max_frames=60)
 key(pygame.K_n)                       # debug: next day (exercises end_day + save path)
+assert game.mode == "day_summary", f"expected day_summary, got {game.mode}"
 assert game.clock.day == 2, f"expected day 2, got {game.clock.day}"
+game.run(max_frames=40)               # render the summary card past its fade-in
+key(pygame.K_e)                       # dismiss it
+assert game.mode == "play", f"summary did not dismiss, mode {game.mode}"
 game.run(max_frames=60)
 
 # Force the night/lighting path and a collapse rollover.
@@ -53,11 +57,15 @@ game.clock.hour = 23.5
 game.run(max_frames=30)
 key(pygame.K_t); key(pygame.K_t); key(pygame.K_t)  # debug +3h -> past 02:00
 assert game.clock.day == 3, f"expected day 3 after collapse, got {game.clock.day}"
+assert game.mode == "day_summary"
+game.run(max_frames=40)
+key(pygame.K_e)
+assert game.mode == "play"
 game.run(max_frames=30)
 
 state = game.gather_state()
 assert set(state) == {"clock", "player", "inventory", "shipping_bin", "world",
-                      "events", "flora", "npcs", "quests"}
+                      "events", "flora", "npcs", "quests", "favors"}
 
 pygame.quit()
 print(f"SMOKE OK — reached day {game.clock.day}, "

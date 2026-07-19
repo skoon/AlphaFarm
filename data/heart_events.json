@@ -1,0 +1,112 @@
+{
+  "sylla": [
+    {
+      "id": "sylla_3",
+      "hearts": 3,
+      "bonus": 50,
+      "pages": [
+        "Sylla waves you over, cradling a potted fern. 'This is Meridian. I named her after my sister.'",
+        "'Back home I catalogued plants that never answered. Here... watch.' The fern's fronds turn toward you, slowly, like a face.",
+        "'Every species on Veridia listens. I stopped feeling alone the day I noticed.'"
+      ]
+    },
+    {
+      "id": "sylla_7",
+      "hearts": 7,
+      "bonus": 80,
+      "pages": [
+        "Sylla is waiting for you with two cups of something warm and violet.",
+        "'I filed my last report to the company empty. Whatever this planet is becoming, they don't get to own it.'",
+        "'But you should know everything I know. Sit. This will take a while — and it starts under your farm.'"
+      ]
+    }
+  ],
+  "hux": [
+    {
+      "id": "hux_3",
+      "hearts": 3,
+      "bonus": 50,
+      "pages": [
+        "Hux jerks a thumb at a crate of dented drill heads. 'Every one of those broke on the same seam under your field.'",
+        "'Rock shouldn't hum, farmer. But I'll tell you what I told nobody: it hums in tune.'",
+        "He scuffs the dirt with his boot, not looking at you. 'Carried that around two years. Feels lighter, saying it to somebody who won't laugh. ...You won't. Right?'"
+      ]
+    },
+    {
+      "id": "hux_7",
+      "hearts": 7,
+      "bonus": 80,
+      "pages": [
+        "Hux pulls out a battered recorder. 'Bore shaft twelve. Listen once, then we never speak of it.'",
+        "Through the static: a slow, enormous breathing. In... out. Patient as tides.",
+        "'I sealed that shaft,' Hux says quietly. 'Not because I was scared. Because it sounded asleep, and waking things early is rude.'"
+      ]
+    }
+  ],
+  "tinks": [
+    {
+      "id": "tinks_3",
+      "hearts": 3,
+      "bonus": 50,
+      "pages": [
+        "Tinks beckons you behind her shop, where the wreck of her ship rusts in the grass.",
+        "'Engine two died in orbit. I should be a crater. Instead something caught me — softly, like a hand under a falling leaf.'",
+        "'I sell junk because it's honest work. But I stay because I owe this rock a life.'"
+      ]
+    },
+    {
+      "id": "tinks_7",
+      "hearts": 7,
+      "bonus": 80,
+      "pages": [
+        "Tinks is sitting on the wreck's wing, watching the moons. She pats the metal beside her.",
+        "'Fixed the nav computer last month. Didn't tell anyone. I could leave, you know.'",
+        "'Then I watched you hauling water at dawn like a lunatic, and I thought: no. This is the first place that ever caught me. You don't fly away from that.'"
+      ]
+    }
+  ],
+  "care7": [
+    {
+      "id": "care7_3",
+      "hearts": 3,
+      "bonus": 50,
+      "pages": [
+        "CARE-7's chest panel opens. Inside, pressed under glass, is a single dried Whisper Wheat stalk.",
+        "'THE PREVIOUS FARMER GREW THIS. THIS UNIT KEPT IT WHEN THEY FLED. ORGANIC MEMORY REQUIRES MAINTENANCE.'",
+        "'YOU ARE THE SECOND FARMER. THIS UNIT WOULD LIKE TO KEEP SOMETHING OF YOURS SOMEDAY. NOT YET. SOMEDAY.'"
+      ]
+    },
+    {
+      "id": "care7_7",
+      "hearts": 7,
+      "bonus": 80,
+      "pages": [
+        "CARE-7 plays a sealed log. A voice you don't know — the last farmer — shaking: 'It spoke my name. I'm done. I'm sorry.'",
+        "'THIS UNIT HAS ANALYZED THE RECORDING 11,204 TIMES,' CARE-7 says. 'CONCLUSION: THE VOICE BELOW WAS NOT THREATENING. IT WAS INTRODUCING ITSELF.'",
+        "'THE LAST FARMER RAN FROM A GREETING. THIS UNIT BELIEVES YOU WILL ANSWER IT.'"
+      ]
+    }
+  ],
+  "juno": [
+    {
+      "id": "juno_3",
+      "hearts": 3,
+      "bonus": 50,
+      "pages": [
+        "Juno drags you into the comms shack, headphones already on your ears. 'Listen. LISTEN.'",
+        "Static. Then, underneath: a chord, vast and slow, rising out of the ground itself.",
+        "'I recorded that under YOUR field,' she grins. 'Best signal on the planet. You're famous, farmer. To me, anyway.'"
+      ]
+    },
+    {
+      "id": "juno_7",
+      "hearts": 7,
+      "bonus": 80,
+      "pages": [
+        "Juno's shack is papered with waveform printouts. She's circled one in red.",
+        "'Every time you harvest, the ground answers. Same three pulses. I ran it through every codec I know.'",
+        "'It's not noise. It's grammar. Three pulses: acknowledge, appreciate, anticipate. It's saying thank you — and it's waiting for something. I think it's waiting for you.'"
+      ]
+    }
+  ]
+}

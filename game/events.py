@@ -17,6 +17,7 @@ class EventSystem:
         self.cfg = cfg["events"]
         self.today: str = "none"
         self.forecast: str = self._roll(rng)
+        self.forecast2: str = self._roll(rng)   # day-after forecast (Juno's perk)
 
     def _roll(self, rng: random.Random) -> str:
         weights = self.cfg["weights"]
@@ -25,7 +26,8 @@ class EventSystem:
 
     def advance_day(self, rng: random.Random) -> None:
         self.today = self.forecast
-        self.forecast = self._roll(rng)
+        self.forecast = self.forecast2
+        self.forecast2 = self._roll(rng)
 
     def apply_morning(self, world, rng: random.Random) -> int:
         """Spore drift auto-fertilizes random planted tiles. Returns tiles affected."""
@@ -52,9 +54,14 @@ class EventSystem:
     def forecast_name(self) -> str:
         return EVENT_NAMES[self.forecast]
 
+    def forecast2_name(self) -> str:
+        return EVENT_NAMES[self.forecast2]
+
     def to_dict(self) -> dict[str, Any]:
-        return {"today": self.today, "forecast": self.forecast}
+        return {"today": self.today, "forecast": self.forecast,
+                "forecast2": self.forecast2}
 
     def from_dict(self, d: dict[str, Any]) -> None:
         self.today = d["today"]
         self.forecast = d["forecast"]
+        self.forecast2 = d.get("forecast2", self.forecast2)

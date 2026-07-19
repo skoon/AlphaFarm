@@ -76,6 +76,11 @@ class ShippingBin:
     def add(self, item_id: str, qty: int = 1) -> None:
         self.contents[item_id] = self.contents.get(item_id, 0) + qty
 
+    def manifest(self, defs: CropDefs) -> list[tuple[str, int, int]]:
+        """(item_id, qty, total value) rows for what will sell overnight."""
+        return [(item, qty, defs.sale_value(item) * qty)
+                for item, qty in sorted(self.contents.items())]
+
     def process_overnight(self, defs: CropDefs) -> int:
         total = sum(defs.sale_value(item) * qty for item, qty in self.contents.items())
         self.contents = {}

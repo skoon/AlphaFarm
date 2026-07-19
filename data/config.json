@@ -3,7 +3,17 @@
     "title": "AlphaFarm — Veridia",
     "tile_size": 32,
     "fps": 60,
+    "zoom": 2,
     "use_sprites": true
+  },
+  "camera": {
+    "follow_speed": 6.0
+  },
+  "audio": {
+    "enabled": true,
+    "master_volume": 0.8,
+    "music_volume": 0.55,
+    "sfx_volume": 0.8
   },
   "time": {
     "day_length_real_seconds": 600,
@@ -67,7 +77,11 @@
     "gift_liked": 25,
     "gift_disliked": -25,
     "tier_thresholds": { "acquaintance": 0, "friend": 300, "confidant": 700 },
-    "walk_speed_tiles_per_sec": 2.2
+    "walk_speed_tiles_per_sec": 2.2,
+    "night_indoors_hour": 21.0,
+    "perk_thresholds": { "tinks": 400, "juno": 400, "care7": 600, "sylla": 600 },
+    "tinks_seed_discount": 0.15,
+    "care7_water_tiles": 4
   },
   "debug": {
     "time_skip_hours": 1.0
