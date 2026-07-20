@@ -98,6 +98,19 @@ class NPC:
     def hearts(self) -> int:
         return self.friendship // self.cfg["points_per_heart"]
 
+    def hearts_label(self) -> str:
+        """One-decimal hearts so day-to-day progress is visible, e.g. '1.4/10 hearts'."""
+        tenths = self.friendship * 10 // self.cfg["points_per_heart"]
+        return f"{tenths / 10:.1f}/10 hearts"
+
+    def gift_points(self, reaction: str) -> int:
+        return {
+            "loved": self.cfg["gift_loved"],
+            "liked": self.cfg["gift_liked"],
+            "disliked": self.cfg["gift_disliked"],
+            "neutral": self.cfg["gift_liked"] // 2,
+        }[reaction]
+
     def has_perk(self) -> bool:
         threshold = self.cfg["perk_thresholds"].get(self.id)
         return threshold is not None and self.friendship >= threshold
@@ -205,12 +218,7 @@ class NPC:
             return "already_today"
         self.gifted_today = True
         reaction = self.gift_reaction(crop_id)
-        points = {
-            "loved": self.cfg["gift_loved"],
-            "liked": self.cfg["gift_liked"],
-            "disliked": self.cfg["gift_disliked"],
-            "neutral": self.cfg["gift_liked"] // 2,
-        }[reaction]
+        points = self.gift_points(reaction)
         self.friendship = max(0, min(self.friendship + points, self.cfg["friendship_max"]))
         return reaction
 

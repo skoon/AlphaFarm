@@ -16,11 +16,13 @@ class EventSystem:
     def __init__(self, cfg: dict[str, Any], rng: random.Random):
         self.cfg = cfg["events"]
         self.today: str = "none"
+        self.aurora_bonus: float = 0.0   # restoration buff: the planet dreams louder
         self.forecast: str = self._roll(rng)
         self.forecast2: str = self._roll(rng)   # day-after forecast (Juno's perk)
 
     def _roll(self, rng: random.Random) -> str:
-        weights = self.cfg["weights"]
+        weights = dict(self.cfg["weights"])
+        weights["aurora"] += self.aurora_bonus
         ids = list(weights.keys())
         return rng.choices(ids, weights=[weights[i] for i in ids], k=1)[0]
 

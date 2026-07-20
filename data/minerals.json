@@ -1,0 +1,5 @@
+{
+  "ferrite": { "name": "Ferrite Chunk", "value": 40, "hp": 2, "drops": [1, 2] },
+  "lumite": { "name": "Lumite Shard", "value": 90, "hp": 3, "drops": [1, 2] },
+  "quartz": { "name": "Void Quartz", "value": 220, "hp": 4, "drops": [1, 1] }
+}

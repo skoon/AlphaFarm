@@ -8,8 +8,8 @@ import main as m  # noqa: E402
 
 
 def make_game():
-    m.load_game = lambda: None
-    m.save_game = lambda state: None
+    m.load_game = lambda *a: None
+    m.save_game = lambda *a: None
     if not pygame.get_init():
         pygame.init()
     return m.Game()

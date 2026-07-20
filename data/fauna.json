@@ -1,0 +1,63 @@
+{
+  "set_name": "Veridian Fauna",
+  "reward_seed": "dream_lotus",
+  "reward_count": 3,
+  "species": {
+    "hollow_wisp": {
+      "name": "Hollow Wisp",
+      "habitat": "farm_night",
+      "entry": "A ribbon of dusk with two soft lights for eyes. It drifts to where lonely thoughts gather, and lingers.",
+      "box": [0, 256, 32, 32],
+      "color": [150, 130, 220]
+    },
+    "gloaming_gaze": {
+      "name": "Gloaming Gaze",
+      "habitat": "farm_night",
+      "entry": "An unblinking eye adrift on the night air. It watches kindly, the way an old friend watches you sleep.",
+      "box": [0, 448, 32, 32],
+      "color": [225, 225, 235]
+    },
+    "dusk_skitterling": {
+      "name": "Dusk Skitterling",
+      "habitat": "farm_night",
+      "entry": "It only stirs after dark, as if daylight might wake it from a pleasant dream it isn't finished having.",
+      "box": [0, 160, 32, 32],
+      "color": [96, 200, 120]
+    },
+    "petal_dozer": {
+      "name": "Petal Dozer",
+      "habitat": "farm_night",
+      "entry": "A warm pink dozeling that hums in its sleep. The patient planet dreams it fondly, again and again.",
+      "box": [0, 736, 32, 32],
+      "color": [235, 110, 160]
+    },
+    "gloom_weaver": {
+      "name": "Gloom Weaver",
+      "habitat": "mine",
+      "entry": "A patient spinner of the deep, weaving the cave's hush into threads that read almost like a lullaby.",
+      "box": [0, 384, 32, 32],
+      "color": [110, 170, 235]
+    },
+    "coil_warden": {
+      "name": "Coil Warden",
+      "habitat": "mine",
+      "entry": "Curled tight as a held breath. Its shell keeps the memory of every echo the mine has ever made.",
+      "box": [0, 512, 32, 32],
+      "color": [220, 72, 84]
+    },
+    "grotto_tendril": {
+      "name": "Grotto Tendril",
+      "habitat": "mine",
+      "entry": "It sways in the dark like kelp in an ocean that dried up an age ago, still dreaming of the tide.",
+      "box": [0, 544, 32, 32],
+      "color": [110, 220, 120]
+    },
+    "shadow_prowler": {
+      "name": "Shadow Prowler",
+      "habitat": "mine",
+      "entry": "A gentle beast wearing the mountain's shadow. It paces the deep roads the planet paces in its sleep.",
+      "box": [0, 608, 32, 32],
+      "color": [150, 120, 210]
+    }
+  }
+}

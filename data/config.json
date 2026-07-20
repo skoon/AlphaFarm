@@ -35,7 +35,13 @@
     "water": 1,
     "harvest": 1,
     "plant": 1,
-    "scan": 1
+    "scan": 1,
+    "mine": 3
+  },
+  "mining": {
+    "regen_chance_per_day": 0.15,
+    "hux_price_bonus": 0.2,
+    "mine_darkness": 175
   },
   "inventory": {
     "slots": 24,
@@ -72,14 +78,15 @@
   "npcs": {
     "friendship_max": 1000,
     "points_per_heart": 100,
-    "talk_points_per_day": 10,
-    "gift_loved": 60,
-    "gift_liked": 25,
+    "talk_points_per_day": 20,
+    "gift_loved": 80,
+    "gift_liked": 30,
     "gift_disliked": -25,
     "tier_thresholds": { "acquaintance": 0, "friend": 300, "confidant": 700 },
     "walk_speed_tiles_per_sec": 2.2,
     "night_indoors_hour": 21.0,
-    "perk_thresholds": { "tinks": 400, "juno": 400, "care7": 600, "sylla": 600 },
+    "perk_thresholds": { "tinks": 400, "juno": 400, "care7": 600, "sylla": 600,
+                         "hux": 400 },
     "tinks_seed_discount": 0.15,
     "care7_water_tiles": 4
   },

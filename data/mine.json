@@ -1,0 +1,35 @@
+{
+  "width": 22,
+  "height": 16,
+  "legend": {
+    "W": "cave_wall",
+    ".": "cave_floor",
+    "X": "mine_exit",
+    "f": "ore_ferrite",
+    "l": "ore_lumite",
+    "q": "ore_quartz",
+    "c": "cave_crystal"
+  },
+  "player_start": {
+    "x": 2,
+    "y": 8
+  },
+  "rows": [
+    "WWWWWWWWWWWWWWWWWWWWWW",
+    "WWW..Wf..WWWWW...cWWWW",
+    "WWf........llW.W...W.W",
+    "WWW..f.....W.........W",
+    "WWWW..fWW............W",
+    "WW......WWWllWWWq....W",
+    "WW..c....WWWWWWqqc...W",
+    "WW....Wf........WW...W",
+    "WX..WWWWlWWWW.W......W",
+    "WfW.fWWWWWWWWWWW.....W",
+    "WWW....fWWWWWWlq.....W",
+    "WW...................W",
+    "WWW.fWWfWWWWlW..W....W",
+    "WWWWWWWWWWWWWWW..W...W",
+    "WWWWWWWWWWWWWWWc....cW",
+    "WWWWWWWWWWWWWWWWWWWWWW"
+  ]
+}

@@ -80,13 +80,24 @@ class ShippingBin:
     def add(self, item_id: str, qty: int = 1) -> None:
         self.contents[item_id] = self.contents.get(item_id, 0) + qty
 
-    def manifest(self, defs: CropDefs) -> list[tuple[str, int, int]]:
+    @staticmethod
+    def _value(defs: CropDefs, item: str, mineral_mult: float,
+               sell_mult: float) -> int:
+        value = defs.sale_value(item)
+        if item.startswith("mineral:"):
+            value = value * mineral_mult
+        return int(round(value * sell_mult))
+
+    def manifest(self, defs: CropDefs, mineral_mult: float = 1.0,
+                 sell_mult: float = 1.0) -> list[tuple[str, int, int]]:
         """(item_id, qty, total value) rows for what will sell overnight."""
-        return [(item, qty, defs.sale_value(item) * qty)
+        return [(item, qty, self._value(defs, item, mineral_mult, sell_mult) * qty)
                 for item, qty in sorted(self.contents.items())]
 
-    def process_overnight(self, defs: CropDefs) -> int:
-        total = sum(defs.sale_value(item) * qty for item, qty in self.contents.items())
+    def process_overnight(self, defs: CropDefs, mineral_mult: float = 1.0,
+                          sell_mult: float = 1.0) -> int:
+        total = sum(self._value(defs, item, mineral_mult, sell_mult) * qty
+                    for item, qty in self.contents.items())
         self.contents = {}
         return total
 

@@ -4,6 +4,7 @@ Run with: uv run python main.py
 """
 from __future__ import annotations
 
+import math
 import random
 import sys
 
@@ -16,6 +17,7 @@ from game.camera import Camera
 from game.config import load_config, load_json
 from game.crops import CropDefs
 from game.events import EventSystem
+from game.fauna import FaunaSystem
 from game.favors import SHORT_NAMES, FavorSystem
 from game.flora import FloraSystem
 from game.inventory import Inventory, ShippingBin
@@ -23,7 +25,9 @@ from game.npcs import NPCManager
 from game.particles import Particles
 from game.player import Player
 from game.quest import QuestSystem
-from game.save_load import load_game, save_game
+from game.restoration import RestorationSystem
+from game.save_load import (SLOT_COUNT, load_game, migrate_legacy, save_game,
+                            slot_path, slot_summary)
 from game.time_system import GameClock, Moons
 from game.ui import UI
 from game.world import World
@@ -31,34 +35,43 @@ from game.world import World
 MAX_DT = 0.1  # clamp frame delta so a hitch can't teleport things
 
 
+PAUSE_ROWS = ["Resume", "Options", "Save", "Quit to Title", "Quit Game"]
+OPTION_ROWS = ["Master", "Music", "SFX", "Back"]
+
+
 class Game:
-    def __init__(self) -> None:
+    def __init__(self, slot: int = 1) -> None:
+        self.slot = slot
+        self.to_title = False
         self.cfg = load_config()
         self.rng = random.Random()
         self.defs = CropDefs()
         self.items = load_json("items.json")
         self.clock = GameClock(self.cfg)
         self.moons = Moons(self.cfg)
-        self.world = World(self.cfg, self.defs)
+        self.worlds = {"farm": World(self.cfg, self.defs),
+                       "mine": World(self.cfg, self.defs, map_name="mine")}
+        self.map_id = "farm"
         self.player = Player(self.cfg, self.world.player_start)
         self.inventory = Inventory(self.cfg)
         self.shipping_bin = ShippingBin()
         self.events = EventSystem(self.cfg, self.rng)
         self.flora = FloraSystem(self.cfg)
+        self.fauna = FaunaSystem()
         self.npcs = NPCManager(self.cfg)
         self.quests = QuestSystem()
         self.favors = FavorSystem()
+        self.restoration = RestorationSystem()
         self.heart_events = load_json("heart_events.json")
 
         ts = self.cfg["window"]["tile_size"]
-        self.screen_w = self.world.width * ts
-        self.screen_h = self.world.height * ts
+        farm = self.worlds["farm"]
+        self.screen_w = farm.width * ts
+        self.screen_h = farm.height * ts
         self.ts = ts
-        self.map_px = (self.world.width * ts, self.world.height * ts)
-        self.camera = Camera(self.cfg, *self.map_px, self.screen_w, self.screen_h)
-        self.world_surf = pygame.Surface(self.map_px)
+        self._rebuild_view()
         self.ui = UI(self.screen_w, self.screen_h)
-        walls = self.world.find_kind("habitat_wall") + self.world.find_kind("habitat_door")
+        walls = farm.find_kind("habitat_wall") + farm.find_kind("habitat_door")
         self.habitat_origin = (min(x for x, _ in walls), min(y for _, y in walls))
 
         self.mode = "play"
@@ -66,6 +79,9 @@ class Game:
         self.shop_mode = "sell"
         self.shop_index = 0
         self.upgrade_index = 0
+        self.restoration_index = 0
+        self.pause_index = 0
+        self.option_index = 0
         self.kiln_index = 0
         self.kiln_pos: tuple[int, int] | None = None
         self.sleep_index = 0
@@ -81,6 +97,31 @@ class Game:
         if not self._load():
             self._new_game()
         self.camera.center_on(self.player.x * ts, self.player.y * ts)
+
+    # ---- maps ---------------------------------------------------------------
+
+    @property
+    def world(self) -> World:
+        return self.worlds[self.map_id]
+
+    def _rebuild_view(self) -> None:
+        w = self.world
+        self.map_px = (w.width * self.ts, w.height * self.ts)
+        self.world_surf = pygame.Surface(self.map_px)
+        self.camera = Camera(self.cfg, *self.map_px, self.screen_w, self.screen_h)
+
+    def _farm_spawn(self) -> tuple[int, int]:
+        ex, ey = self.worlds["farm"].find_kind("mine_entrance")[0]
+        return ex, ey + 1
+
+    def switch_map(self, target: str, spawn: tuple[int, int]) -> None:
+        """Move to another map, centering the player on the spawn tile so their
+        collision box doesn't straddle (and snag on) an adjacent solid tile."""
+        self.map_id = target
+        self._rebuild_view()
+        self.player.x, self.player.y = spawn[0] + 0.5, spawn[1] + 0.5
+        self.particles = Particles()
+        self.camera.center_on(self.player.x * self.ts, self.player.y * self.ts)
 
     # ---- new game / persistence -------------------------------------------
 
@@ -98,16 +139,20 @@ class Game:
             "player": self.player.to_dict(),
             "inventory": self.inventory.to_dict(),
             "shipping_bin": self.shipping_bin.to_dict(),
-            "world": self.world.to_dict(),
+            "world": self.worlds["farm"].to_dict(),
+            "mine_world": self.worlds["mine"].to_dict(),
+            "map_id": self.map_id,
             "events": self.events.to_dict(),
             "flora": self.flora.to_dict(),
+            "fauna": self.fauna.to_dict(),
             "npcs": self.npcs.to_dict(),
             "quests": self.quests.to_dict(),
             "favors": self.favors.to_dict(),
+            "restoration": self.restoration.to_dict(),
         }
 
     def _load(self) -> bool:
-        state = load_game()
+        state = load_game(slot_path(self.slot))
         if state is None:
             return False
         self.clock.from_dict(state["clock"])
@@ -116,18 +161,33 @@ class Game:
             self.inventory.expand(12)
         self.inventory.from_dict(state["inventory"])
         self.shipping_bin.from_dict(state["shipping_bin"])
-        self.world.from_dict(state["world"])
+        self.worlds["farm"].from_dict(state["world"])
+        if state.get("mine_world"):
+            self.worlds["mine"].from_dict(state["mine_world"])
+        self.map_id = state.get("map_id", "farm")
+        if self.map_id != "farm":
+            self._rebuild_view()
         self.events.from_dict(state["events"])
         self.flora.from_dict(state["flora"])
+        if state.get("fauna"):
+            self.fauna.from_dict(state["fauna"])
         self.npcs.from_dict(state["npcs"])
         self.quests.from_dict(state["quests"])
         if state.get("favors"):
             self.favors.from_dict(state["favors"])
+        if state.get("restoration"):
+            self.restoration.from_dict(state["restoration"])
+        self._apply_restoration_buffs()
         self.ui.toast(f"Save loaded — day {self.clock.day}.")
         return True
 
+    def _apply_restoration_buffs(self) -> None:
+        base = self.cfg["player"]["max_energy"]
+        self.player.max_energy = base + self.restoration.buff("energy_max")
+        self.events.aurora_bonus = self.restoration.buff("aurora_weight")
+
     def save(self) -> None:
-        save_game(self.gather_state())
+        save_game(self.gather_state(), slot_path(self.slot))
 
     # ---- helpers -------------------------------------------------------------
 
@@ -212,7 +272,7 @@ class Game:
         rows = []
         if self.shop_mode == "sell":
             for s in self.inventory.items():
-                if s["id"].startswith("crop:") or s["id"].startswith("good:"):
+                if s["id"].startswith(("crop:", "good:", "mineral:")):
                     value = self.defs.sale_value(s["id"])
                     rows.append({"id": s["id"], "qty": s["qty"],
                                  "label": f"{self.defs.item_name(s['id'])} x{s['qty']}"
@@ -241,6 +301,28 @@ class Game:
             return
         self.player.swing_t = 0.18
         wx, wy = tx * self.ts + self.ts // 2, ty * self.ts + self.ts // 2
+
+        ore_tile = self.world.tile(tx, ty)
+        if tool == "hoe" and ore_tile is not None and ore_tile.kind.startswith("ore_"):
+            if not self.player.can_afford_energy("mine"):
+                self.ui.toast("Too exhausted to swing at rock.")
+                return
+            self.player.spend_energy("mine")
+            self.particles.burst("soil", wx, wy, self.rng)
+            audio.play("hoe")
+            result = self.world.mine_ore(tx, ty, self.rng)
+            if result:
+                mineral, qty = result
+                item = f"mineral:{mineral}"
+                leftover = self.inventory.add(item, qty)
+                self.particles.burst("sparkle", wx, wy, self.rng)
+                audio.play("harvest")
+                self.particles.float_text(f"+{qty - leftover} {self.defs.item_name(item)}",
+                                          wx, wy - 6)
+                if leftover:
+                    self.ui.toast(f"Inventory full! Lost {leftover} "
+                                  f"{self.defs.item_name(item)}.")
+            return
 
         if tool == "hoe":
             gear = self.world.remove_gear(tx, ty)
@@ -289,6 +371,31 @@ class Game:
                 if qty - leftover > 1:
                     self.ui.toast("Double harvest — the soil sings!")
         elif tool == "scanner":
+            fauna_hit = self.fauna.scan(self.map_id, tx, ty)
+            if fauna_hit is not None:
+                self.player.spend_energy("scan")
+                self.particles.burst("sparkle", wx, wy, self.rng, n=6)
+                audio.play("blip")
+                fsid, fnew = fauna_hit
+                fsp = self.fauna.species[fsid]
+                if fnew:
+                    self.ui.toast(f"Documented: {fsp['name']}!")
+                    if self.fauna.set_complete():
+                        reward = self.fauna.claim_reward()
+                        if reward:
+                            seed_id, count = reward
+                            self.inventory.add(f"seed:{seed_id}", count)
+                            self.say("VERIDIA",
+                                     f"The {self.fauna.set_name} codex is complete. The "
+                                     f"planet stirs, grateful, and lets {count} "
+                                     f"{self.defs.get(seed_id)['name']} seeds fall into "
+                                     "your pack — dreams to plant of your own.")
+                else:
+                    self.ui.toast(f"Another {fsp['name']} — it darts away.")
+                return
+            if self.map_id != "farm":
+                self.ui.toast("Scanner: nothing to document down here.")
+                return
             hit = self.flora.scan(tx, ty)
             if hit is None:
                 self.ui.toast("Scanner: no undocumented flora there.")
@@ -336,16 +443,17 @@ class Game:
 
     def interact(self) -> None:
         tx, ty = self.player.target_tile()
-        npc = self.npcs.npc_near(tx, ty)
+        npc = self.npcs.npc_near(tx, ty) if self.map_id == "farm" else None
         if npc:
             trigger = f"talk_{npc.id}"
-            step = self.quests.try_trigger(trigger, len(self.flora.codex),
+            step = self.quests.try_trigger(trigger,
+                                           len(self.flora.codex) + len(self.fauna.codex),
                                            self.world.avg_field_resonance(),
                                            self.clock.is_night)
             if step:
                 self._fire_quest_step(step, npc.name)
                 return
-            label = f"{npc.name} ({npc.hearts()}/10 hearts)"
+            label = f"{npc.name} ({npc.hearts_label()})"
             ev = npc.pending_heart_event(self.heart_events)
             if ev:
                 npc.complete_heart_event(ev)
@@ -363,9 +471,17 @@ class Game:
                 self.say(label, self.favors.thanks[npc.id].format(crop=reward["crop_name"]),
                          npc.id)
                 self.ui.toast(f"+{reward['credits']} cr")
+                self.particles.float_text(f"+{reward['friendship']}",
+                                          npc.x * self.ts + self.ts // 2,
+                                          (npc.y - 0.4) * self.ts, (255, 170, 220))
                 return
+            first_talk_today = not npc.talked_today
             line = npc.talk_line(self.npcs.dialogue, self.clock.day,
                                  self._dialogue_ctx(npc))
+            if first_talk_today:
+                self.particles.float_text(f"+{self.cfg['npcs']['talk_points_per_day']}",
+                                          npc.x * self.ts + self.ts // 2,
+                                          (npc.y - 0.4) * self.ts, (255, 170, 220))
             self.say(label, line, npc.id)
             if npc.id == "sylla" and npc.has_perk():
                 self.say(f"{npc.name} — field scan", self._soil_report(), npc.id)
@@ -400,15 +516,28 @@ class Game:
             return
         standing = self.world.tile(*self.player.standing_tile())
         kind = tile.kind if tile else ""
-        if kind not in ("habitat_door", "terminal", "shipping_pod", "great_crystal") \
-                and standing and standing.kind == "habitat_door":
-            kind = "habitat_door"
+        if kind not in ("habitat_door", "terminal", "shipping_pod", "great_crystal",
+                        "mine_entrance", "mine_exit") and standing:
+            if standing.kind in ("habitat_door", "mine_exit"):
+                kind = standing.kind
+
+        if kind == "mine_entrance":
+            audio.play("blip")
+            self.switch_map("mine", self.worlds["mine"].player_start)
+            self.ui.toast("You climb down into Hux's dig site. The rock hums.")
+            return
+        if kind == "mine_exit":
+            audio.play("blip")
+            self.switch_map("farm", self._farm_spawn())
+            self.ui.toast("Daylight. The hum fades behind you.")
+            return
 
         if kind == "habitat_door":
             self.mode = "sleep"
             self.sleep_index = 0
         elif kind == "terminal":
-            step = self.quests.try_trigger("terminal", len(self.flora.codex),
+            step = self.quests.try_trigger("terminal",
+                                           len(self.flora.codex) + len(self.fauna.codex),
                                            self.world.avg_field_resonance(),
                                            self.clock.is_night)
             if step:
@@ -419,13 +548,21 @@ class Game:
             self.mode = "shop"
             self.shop_index = 0
         elif kind == "great_crystal":
-            step = self.quests.try_trigger("great_crystal_night", len(self.flora.codex),
+            step = self.quests.try_trigger("great_crystal_night",
+                                           len(self.flora.codex) + len(self.fauna.codex),
                                            self.world.avg_field_resonance(),
                                            self.clock.is_night)
             if step:
                 self._fire_quest_step(step, "VERIDIA")
             elif self.quests.finished:
-                self.say("VERIDIA", "The crystal is warm, like held breath. You are welcome here.")
+                if self.restoration.all_complete():
+                    self.say("VERIDIA", "The crystal holds your reflection a long "
+                             "moment, then lets it go, glowing. WE WANT FOR NOTHING. "
+                             "GROW WITH US, GARDENER. ALWAYS.")
+                else:
+                    self.mode = "restoration"
+                    self.restoration_index = 0
+                    audio.play("quest")
             else:
                 self.ui.toast("The great crystal thrums quietly." +
                               ("" if self.clock.is_night else " Perhaps at night..."))
@@ -441,7 +578,7 @@ class Game:
 
     def give_gift(self) -> None:
         tx, ty = self.player.target_tile()
-        npc = self.npcs.npc_near(tx, ty)
+        npc = self.npcs.npc_near(tx, ty) if self.map_id == "farm" else None
         if npc is None:
             self.ui.toast("No one nearby to gift.")
             return
@@ -454,7 +591,11 @@ class Game:
         if reaction != "already_today":
             self.inventory.remove(slot["id"], 1)
             audio.play("gift")
-        self.say(f"{npc.name} ({npc.hearts()}/10 hearts)",
+            points = npc.gift_points(reaction)
+            color = (240, 120, 120) if points < 0 else (255, 170, 220)
+            self.particles.float_text(f"{points:+d}", npc.x * self.ts + self.ts // 2,
+                                      (npc.y - 0.4) * self.ts, color)
+        self.say(f"{npc.name} ({npc.hearts_label()})",
                  self.npcs.gift_text(npc, reaction), npc.id)
 
     def shop_action(self, ship_stack: bool) -> None:
@@ -587,28 +728,91 @@ class Game:
         self.ui.toast(f"+1 {self.defs.item_name(f'good:{crop_id}')}")
         return True
 
+    # ---- pause / options ---------------------------------------------------------
+
+    def pause_action(self, row: str) -> None:
+        audio.play("blip")
+        if row == "Resume":
+            self.mode = "play"
+        elif row == "Options":
+            self.mode = "options"
+            self.option_index = 0
+        elif row == "Save":
+            self.save()
+            self.ui.toast("Game saved.")
+        elif row == "Quit to Title":
+            self.save()
+            self.to_title = True
+            self.running = False
+        elif row == "Quit Game":
+            self.save()
+            self.running = False
+
+    def adjust_volume(self, row: str, delta: float) -> None:
+        master, music, sfx = audio.get_volumes()
+        if row == "Master":
+            audio.set_volumes(master=master + delta)
+        elif row == "Music":
+            audio.set_volumes(music=music + delta)
+        elif row == "SFX":
+            audio.set_volumes(sfx=sfx + delta)
+            audio.play("blip")
+
+    # ---- restoration -------------------------------------------------------------
+
+    def offer_bundle(self) -> None:
+        pending = self.restoration.available(self.quests.finished)
+        if not pending:
+            return
+        self.restoration_index = min(self.restoration_index, len(pending) - 1)
+        bid = pending[self.restoration_index]
+        bundle = self.restoration.offer(bid, self.inventory)
+        if bundle is None:
+            self.ui.toast("The crystal waits. You do not have everything it asks.")
+            return
+        audio.play("quest")
+        self._apply_restoration_buffs()
+        self.mode = "play"
+        self.say("VERIDIA", bundle["text"])
+        self.ui.toast(f"Restoration: {bundle['name']} complete.")
+        if self.restoration.all_complete():
+            self.say("VERIDIA", "Every furrow on the planet lights at once, horizon "
+                     "to horizon — your farm the first word of a sentence the whole "
+                     "world is writing. VERIDIA IS AWAKE. Thank you, farmer.")
+            self.ui.toast("Veridia Awakened — the restoration is complete.")
+
     # ---- day cycle ---------------------------------------------------------------
 
     def end_day(self, collapsed: bool) -> None:
+        farm = self.worlds["farm"]
+        if self.map_id != "farm":   # wherever you pass out, you wake at the habitat
+            self.switch_map("farm", farm.player_start)
         aurora_mult = self.events.growth_multiplier()
-        self.world.end_of_day(self.moons, self.clock.day, aurora_mult, self.rng)
-        manifest = self.shipping_bin.manifest(self.defs)
-        income = self.shipping_bin.process_overnight(self.defs)
+        growth_mult = aurora_mult * (1.0 + self.restoration.buff("growth_rate"))
+        farm.end_of_day(self.moons, self.clock.day, growth_mult, self.rng,
+                        recovery_mult=self.restoration.buff("soil_recovery") or 1.0)
+        mineral_mult = 1.0 + (self.cfg["mining"]["hux_price_bonus"]
+                              if self.npcs.perk("hux") else 0.0)
+        sell_mult = 1.0 + self.restoration.buff("sell_bonus")
+        manifest = self.shipping_bin.manifest(self.defs, mineral_mult, sell_mult)
+        income = self.shipping_bin.process_overnight(self.defs, mineral_mult, sell_mult)
         self.player.credits += income
         self.clock.start_new_day()
         self.events.advance_day(self.rng)
-        spored = self.events.apply_morning(self.world, self.rng)
+        spored = self.events.apply_morning(farm, self.rng)
+        self.worlds["mine"].regen_ores(self.rng,
+                                       self.cfg["mining"]["regen_chance_per_day"])
         care7_watered = 0
         if self.npcs.perk("care7"):
-            planted = [(x, y) for x, y, t in self.world.iter_tiles()
+            planted = [(x, y) for x, y, t in farm.iter_tiles()
                        if t.crop and not t.crop.wilted and not t.crop.watered_today
                        and not t.crop.strict_watering]
             self.rng.shuffle(planted)
             for x, y in planted[:self.cfg["npcs"]["care7_water_tiles"]]:
-                self.world.water(x, y)
+                farm.water(x, y)
                 care7_watered += 1
-        drone_watered = self.world.drone_morning_water()
-        self.flora.daily_spawn(self.world, self.moons, self.clock.day, self.rng)
+        drone_watered = farm.drone_morning_water()
+        self.flora.daily_spawn(farm, self.moons, self.clock.day, self.rng)
         self.npcs.end_of_day()
         crop_pool = [cid for cid in (set(self.defs.starter_ids()) |
                                      set(self.flora.unlocked_seed_crops()))
@@ -700,6 +904,43 @@ class Game:
                 self.mode = "play"
             return
 
+        if self.mode == "pause":
+            if k in (pygame.K_UP, pygame.K_w):
+                self.pause_index = (self.pause_index - 1) % len(PAUSE_ROWS)
+            elif k in (pygame.K_DOWN, pygame.K_s):
+                self.pause_index = (self.pause_index + 1) % len(PAUSE_ROWS)
+            elif k == pygame.K_RETURN:
+                self.pause_action(PAUSE_ROWS[self.pause_index])
+            elif k == pygame.K_ESCAPE:
+                self.mode = "play"
+            return
+
+        if self.mode == "options":
+            if k in (pygame.K_UP, pygame.K_w):
+                self.option_index = (self.option_index - 1) % len(OPTION_ROWS)
+            elif k in (pygame.K_DOWN, pygame.K_s):
+                self.option_index = (self.option_index + 1) % len(OPTION_ROWS)
+            elif k in (pygame.K_LEFT, pygame.K_a, pygame.K_RIGHT, pygame.K_d):
+                delta = 0.1 if k in (pygame.K_RIGHT, pygame.K_d) else -0.1
+                self.adjust_volume(OPTION_ROWS[self.option_index], delta)
+            elif k == pygame.K_RETURN and OPTION_ROWS[self.option_index] == "Back":
+                self.mode = "pause"
+            elif k == pygame.K_ESCAPE:
+                self.mode = "pause"
+            return
+
+        if self.mode == "restoration":
+            pending = self.restoration.available(self.quests.finished)
+            if k in (pygame.K_UP, pygame.K_w) and pending:
+                self.restoration_index = (self.restoration_index - 1) % len(pending)
+            elif k in (pygame.K_DOWN, pygame.K_s) and pending:
+                self.restoration_index = (self.restoration_index + 1) % len(pending)
+            elif k == pygame.K_RETURN:
+                self.offer_bundle()
+            elif k in (pygame.K_ESCAPE, pygame.K_e):
+                self.mode = "play"
+            return
+
         if self.mode == "upgrades":
             rows = self.upgrade_rows()
             if k in (pygame.K_UP, pygame.K_w) and rows:
@@ -762,7 +1003,9 @@ class Game:
         elif self.debug and k == pygame.K_n:
             self.end_day(collapsed=False)
         elif k == pygame.K_ESCAPE:
-            self.running = False
+            self.mode = "pause"
+            self.pause_index = 0
+            audio.play("blip")
 
     def handle_mouse(self, e: pygame.event.Event) -> None:
         if e.button != 1:
@@ -795,6 +1038,27 @@ class Game:
                     else:
                         self.upgrade_index = i
                     return
+        elif self.mode == "restoration":
+            for i, rect in enumerate(self.ui.restoration_row_rects):
+                if rect.collidepoint(e.pos):
+                    if i == self.restoration_index:
+                        self.offer_bundle()
+                    else:
+                        self.restoration_index = i
+                    return
+        elif self.mode == "pause":
+            for i, rect in enumerate(self.ui.pause_row_rects):
+                if rect.collidepoint(e.pos):
+                    self.pause_index = i
+                    self.pause_action(PAUSE_ROWS[i])
+                    return
+        elif self.mode == "options":
+            for i, rect in enumerate(self.ui.option_row_rects):
+                if rect.collidepoint(e.pos):
+                    self.option_index = i
+                    if OPTION_ROWS[i] == "Back":
+                        self.mode = "pause"
+                    return
         elif self.mode == "kiln":
             for i, rect in enumerate(self.ui.kiln_row_rects):
                 if rect.collidepoint(e.pos):
@@ -810,9 +1074,12 @@ class Game:
         self.t += dt
         self.ui.update(dt)
         self.particles.update(dt)
-        audio.set_ambient("ambient_night" if self.clock.is_night else "ambient_day")
+        in_mine = self.map_id == "mine"
+        audio.set_ambient("ambient_night"
+                          if in_mine or self.clock.is_night else "ambient_day")
         audio.set_weather("storm_loop"
-                          if self.events.ion_storm_active(self.clock.hour) else None)
+                          if self.events.ion_storm_active(self.clock.hour)
+                          and not in_mine else None)
         if self.mode == "day_summary":
             self.summary_age += dt
             return
@@ -827,14 +1094,17 @@ class Game:
         if self.clock.update(dt):
             self.end_day(collapsed=True)
             return
-        self.npcs.update(self.clock.hour, dt, self.world,
+        self.npcs.update(self.clock.hour, dt, self.worlds["farm"],
                          self.events.ion_storm_active(self.clock.hour))
-        if self.events.today == "spore_drift" and self.rng.random() < dt * 2.5:
+        self.fauna.update(dt, self.worlds, self.map_id,
+                          (self.player.x, self.player.y), self.clock.hour, self.rng)
+        if self.map_id == "farm" and self.events.today == "spore_drift" \
+                and self.rng.random() < dt * 2.5:
             sx, sy = self.rng.choice(self.soil_tiles)
             self.particles.burst("spore", sx * self.ts + self.rng.uniform(4, 28),
                                  sy * self.ts + self.rng.uniform(4, 20), self.rng)
         self.storm_flash = max(0.0, self.storm_flash - dt)
-        if self.events.ion_storm_active(self.clock.hour):
+        if self.events.ion_storm_active(self.clock.hour) and self.map_id == "farm":
             if self.rng.random() < dt * 0.12:
                 self.storm_flash = 0.3
             standing = self.world.tile(*self.player.standing_tile())
@@ -854,8 +1124,9 @@ class Game:
         for y in range(y0, y1):
             for x in range(x0, x1):
                 render.draw_tile(ws, self.world.tiles[y][x], x, y, ts, self.t)
-        render.draw_habitat(ws, self.habitat_origin, ts)
-        render.draw_buildings(ws, self.world.buildings, ts)
+        if self.map_id == "farm":
+            render.draw_habitat(ws, self.habitat_origin, ts)
+            render.draw_buildings(ws, self.world.buildings, ts)
         for y in range(y0, y1):
             for x in range(x0, x1):
                 tile = self.world.tiles[y][x]
@@ -863,15 +1134,20 @@ class Game:
                     render.draw_gear(ws, tile.gear, x, y, ts, self.t)
                 if tile.crop:
                     render.draw_crop(ws, tile.crop, x, y, ts, self.t)
-        for w in self.flora.wild:
-            render.draw_wild_plant(ws, self.flora.species[w["species"]],
-                                   w["x"], w["y"], ts, self.t)
-        for npc in self.npcs.npcs.values():
-            render.draw_npc(ws, npc, ts)
+        if self.map_id == "farm":
+            for w in self.flora.wild:
+                render.draw_wild_plant(ws, self.flora.species[w["species"]],
+                                       w["x"], w["y"], ts, self.t)
+            for npc in self.npcs.npcs.values():
+                render.draw_npc(ws, npc, ts)
+        for c in self.fauna.critters:
+            if c["map"] == self.map_id:
+                render.draw_critter(ws, self.fauna.species[c["species"]], c, ts, self.t)
         render.draw_player(ws, self.player, ts, self.t)
         self.particles.draw(ws, self.t)
+        mine_dark = self.cfg["mining"]["mine_darkness"] if self.map_id == "mine" else None
         render.draw_lighting(ws, self.world, self.flora, self.clock, ts, self.t,
-                             self.camera.rect)
+                             self.camera.rect, darkness_override=mine_dark)
 
         if self.mode == "play":
             tx, ty = self.player.target_tile()
@@ -882,12 +1158,13 @@ class Game:
         pygame.transform.scale(ws.subsurface(self.camera.rect),
                                (self.screen_w, self.screen_h), screen)
 
-        render.draw_time_tint(screen, self.clock.hour)
-        if self.events.today == "aurora" and self.clock.is_night:
-            strength = max(0.35, self.clock.darkness() / self.clock.max_darkness)
-            render.draw_aurora(screen, self.t, strength)
-        if self.events.ion_storm_active(self.clock.hour):
-            render.draw_storm(screen, self.t, self.storm_flash)
+        if self.map_id == "farm":
+            render.draw_time_tint(screen, self.clock.hour)
+            if self.events.today == "aurora" and self.clock.is_night:
+                strength = max(0.35, self.clock.darkness() / self.clock.max_darkness)
+                render.draw_aurora(screen, self.t, strength)
+            if self.events.ion_storm_active(self.clock.hour):
+                render.draw_storm(screen, self.t, self.storm_flash)
         self.particles.draw_texts(screen, self.camera, self.ui.font)
 
         self.ui.draw_hud(screen, self)
@@ -902,6 +1179,12 @@ class Game:
             self.ui.draw_shop(screen, self)
         elif self.mode == "upgrades":
             self.ui.draw_upgrades(screen, self)
+        elif self.mode == "restoration":
+            self.ui.draw_restoration(screen, self)
+        elif self.mode == "pause":
+            self.ui.draw_pause(screen, self)
+        elif self.mode == "options":
+            self.ui.draw_options(screen, self)
         elif self.mode == "kiln":
             self.ui.draw_kiln(screen, self)
         elif self.mode == "terminal":
@@ -946,9 +1229,110 @@ class Game:
                 break
 
 
+def title_screen(screen: pygame.Surface) -> int | None:
+    """Slot picker under the twin moons. Returns a slot number, or None to quit."""
+    migrate_legacy()
+    clock = pygame.time.Clock()
+    big = pygame.font.SysFont("consolas", 42, bold=True)
+    font = pygame.font.SysFont("consolas", 18)
+    small = pygame.font.SysFont("consolas", 12)
+    rng = random.Random(7)
+    w, h = screen.get_size()
+    stars = [(rng.randrange(w), rng.randrange(h), rng.uniform(0.4, 1.0))
+             for _ in range(140)]
+
+    def build_rows() -> list[tuple[str, int | None]]:
+        rows: list[tuple[str, int | None]] = []
+        stamped = [(n, slot_path(n).stat().st_mtime) for n in range(1, SLOT_COUNT + 1)
+                   if slot_path(n).exists()]
+        if stamped:
+            latest = max(stamped, key=lambda p: p[1])[0]
+            s = slot_summary(latest)
+            if s:
+                rows.append((f"Continue — Slot {latest} (Day {s['day']}, "
+                             f"{s['credits']} cr)", latest))
+        for n in range(1, SLOT_COUNT + 1):
+            s = slot_summary(n)
+            label = f"Slot {n} — Day {s['day']}, {s['credits']} cr" if s \
+                else f"Slot {n} — New game"
+            rows.append((label, n))
+        rows.append(("Quit", None))
+        return rows
+
+    rows = build_rows()
+    index = 0
+    t = 0.0
+    while True:
+        dt = clock.tick(60) / 1000.0
+        t += dt
+        row_rects = []
+        for e in pygame.event.get():
+            if e.type == pygame.QUIT:
+                return None
+            if e.type == pygame.KEYDOWN:
+                if e.key in (pygame.K_UP, pygame.K_w):
+                    index = (index - 1) % len(rows)
+                elif e.key in (pygame.K_DOWN, pygame.K_s):
+                    index = (index + 1) % len(rows)
+                elif e.key == pygame.K_RETURN:
+                    return rows[index][1]
+                elif e.key == pygame.K_ESCAPE:
+                    return None
+            if e.type == pygame.MOUSEBUTTONDOWN and e.button == 1:
+                for i, r in enumerate(_title_row_rects(rows, screen, font)):
+                    if r.collidepoint(e.pos):
+                        return rows[i][1]
+
+        screen.fill((14, 8, 28))
+        for sx, sy, b in stars:
+            tw = 0.5 + 0.5 * math.sin(t * 1.5 + sx * 0.13 + sy * 0.07)
+            c = int(90 + 120 * b * tw)
+            screen.fill((c, c, min(255, c + 30)),
+                        (sx, (sy + int(t * 4 * b)) % h, 2, 2))
+        pulse = 0.7 + 0.3 * math.sin(t * 1.2)
+        pygame.draw.circle(screen, (int(90 * pulse), int(110 * pulse), int(170 * pulse)),
+                           (w // 2, h // 3 - 60), 46)
+        title = big.render("AlphaFarm — Veridia", True, (235, 230, 245))
+        screen.blit(title, ((w - title.get_width()) // 2, h // 3))
+        sub = small.render("the ground is listening", True, (160, 150, 180))
+        screen.blit(sub, ((w - sub.get_width()) // 2, h // 3 + 52))
+        for i, r in enumerate(_title_row_rects(rows, screen, font)):
+            row_rects.append(r)
+            color = (255, 210, 120) if i == index else (235, 230, 245)
+            marker = "> " if i == index else "  "
+            img = font.render(marker + rows[i][0], True, color)
+            screen.blit(img, (r.x, r.y))
+        hint = small.render("[Enter/click] select   [Esc] quit", True, (160, 150, 180))
+        screen.blit(hint, ((w - hint.get_width()) // 2, h - 40))
+        pygame.display.flip()
+
+
+def _title_row_rects(rows, screen: pygame.Surface, font) -> list[pygame.Rect]:
+    w, h = screen.get_size()
+    out = []
+    y = h // 2 + 20
+    for label, _ in rows:
+        img_w, img_h = font.size("> " + label)
+        out.append(pygame.Rect((w - img_w) // 2, y, img_w, img_h))
+        y += img_h + 14
+    return out
+
+
 def main() -> None:
     pygame.init()
-    Game().run()
+    cfg = load_config()
+    m = load_json("map.json")
+    ts = cfg["window"]["tile_size"]
+    screen = pygame.display.set_mode((m["width"] * ts, m["height"] * ts))
+    pygame.display.set_caption(cfg["window"]["title"])
+    while True:
+        slot = title_screen(screen)
+        if slot is None:
+            break
+        game = Game(slot)
+        game.run()
+        if not game.to_title:
+            break
     audio.shutdown()
     pygame.quit()
     sys.exit(0)

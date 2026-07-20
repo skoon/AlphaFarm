@@ -23,6 +23,14 @@ TILE_COLORS = {
     "shipping_pod": (222, 158, 84),
     "building": (118, 102, 130),
     "path": (108, 94, 116),
+    "mine_entrance": (30, 22, 40),
+    "cave_floor": (56, 48, 66),
+    "cave_wall": (30, 26, 40),
+    "mine_exit": (56, 48, 66),
+    "cave_crystal": (140, 200, 240),
+    "ore_ferrite": (176, 122, 92),
+    "ore_lumite": (120, 220, 170),
+    "ore_quartz": (190, 160, 255),
 }
 TILLED_COLOR = (68, 50, 66)
 WATERED_TINT = (46, 40, 78)
@@ -165,6 +173,51 @@ def draw_tile(surf: pygame.Surface, tile, x: int, y: int, ts: int, t: float) -> 
             return
         surf.fill(TILE_COLORS[kind], rect)
         pygame.draw.rect(surf, _lerp(TILE_COLORS["building"], (0, 0, 0), 0.25), rect, 2)
+        return
+
+    if kind == "mine_entrance":
+        grass_base()
+        mouth = rect.inflate(-4, -6)
+        pygame.draw.ellipse(surf, (52, 44, 62), mouth)
+        pygame.draw.ellipse(surf, TILE_COLORS[kind], mouth.inflate(-8, -8))
+        pygame.draw.rect(surf, (120, 96, 72), (rect.x + 2, rect.bottom - 6, ts - 4, 4))
+        return
+
+    if kind in ("cave_floor", "mine_exit"):
+        surf.fill(TILE_COLORS["cave_floor"], rect)
+        if (x * 13 + y * 7) % 6 == 0:
+            surf.fill((66, 58, 78), (rect.x + (x * 5) % (ts - 4) + 2,
+                                     rect.y + (y * 11) % (ts - 4) + 2, 3, 2))
+        if kind == "mine_exit":
+            pygame.draw.rect(surf, (150, 120, 80), rect.inflate(-8, -4), 2)
+            for i in range(1, 4):
+                pygame.draw.line(surf, (150, 120, 80),
+                                 (rect.x + 6, rect.y + i * ts // 4),
+                                 (rect.right - 7, rect.y + i * ts // 4), 2)
+        return
+
+    if kind == "cave_wall":
+        surf.fill(TILE_COLORS[kind], rect)
+        pygame.draw.line(surf, (44, 38, 56), rect.topleft, rect.topright)
+        return
+
+    if kind.startswith("ore_"):
+        surf.fill(TILE_COLORS["cave_wall"], rect)
+        color = TILE_COLORS[kind]
+        for i, (ox, oy, r) in enumerate(((8, 9, 4), (22, 14, 3), (13, 23, 5), (24, 25, 3))):
+            px_, py_ = rect.x + ox * ts // 32, rect.y + oy * ts // 32
+            pygame.draw.circle(surf, color, (px_, py_), r)
+            pygame.draw.circle(surf, _lerp(color, (255, 255, 255), 0.35), (px_, py_), r, 1)
+        return
+
+    if kind == "cave_crystal":
+        surf.fill(TILE_COLORS["cave_floor"], rect)
+        pulse = 0.75 + 0.25 * math.sin(t * 2 + x + y)
+        col = _lerp((60, 80, 140), TILE_COLORS[kind], pulse)
+        pts = [(rect.centerx, rect.y + 2), (rect.right - 3, rect.centery + 4),
+               (rect.centerx, rect.bottom - 2), (rect.x + 3, rect.centery + 4)]
+        pygame.draw.polygon(surf, col, pts)
+        pygame.draw.polygon(surf, _lerp(col, (255, 255, 255), 0.4), pts, 1)
         return
 
     surf.fill(TILE_COLORS[kind], rect)
@@ -326,6 +379,31 @@ def draw_wild_plant(surf: pygame.Surface, species: dict, x: int, y: int, ts: int
     pygame.draw.circle(surf, _lerp(color, (255, 255, 255), 0.4), (int(cx + sway), cy - 4), 4, 1)
 
 
+def draw_critter(surf: pygame.Surface, species: dict, critter: dict,
+                 ts: int, t: float) -> None:
+    """A wandering fauna critter. Sprite if loaded (flipped to face travel), else a
+    small procedural blob in the species colour. A faint bob keeps it feeling alive."""
+    cx = int(critter["x"] * ts)
+    cy = int(critter["y"] * ts)
+    bob = int(math.sin(t * 3.0 + critter["x"] * 2.1 + critter["y"] * 1.3) * 2)
+    sprite = SPRITES.get(f"fauna:{critter['species']}")
+    if sprite:
+        if critter["vx"] > 0:
+            sprite = pygame.transform.flip(sprite, True, False)
+        surf.blit(sprite, sprite.get_rect(midbottom=(cx, cy + ts // 3 + bob)))
+        return
+    color = tuple(species["color"])
+    by = cy + bob
+    r = max(3, ts // 5)
+    pygame.draw.ellipse(surf, color, (cx - r, by - r + 2, r * 2, int(r * 1.6)))
+    pygame.draw.ellipse(surf, _lerp(color, (0, 0, 0), 0.4),
+                        (cx - r, by - r + 2, r * 2, int(r * 1.6)), 1)
+    eye_dx = 2 if critter["vx"] >= 0 else -2
+    for ex in (cx - 3 + eye_dx, cx + 3 + eye_dx):
+        pygame.draw.circle(surf, (245, 245, 250), (ex, by - 2), 2)
+        pygame.draw.circle(surf, (24, 20, 36), (ex, by - 2), 1)
+
+
 FACING_NAMES = {(0, 1): "down", (0, -1): "up", (-1, 0): "left", (1, 0): "right"}
 PLAYER_ANIM_FPS = 7
 
@@ -457,10 +535,12 @@ def draw_storm(screen: pygame.Surface, t: float, flash: float) -> None:
 
 
 def draw_lighting(surf: pygame.Surface, world, flora, clock, ts: int, t: float,
-                  view_rect: pygame.Rect | None = None) -> None:
+                  view_rect: pygame.Rect | None = None,
+                  darkness_override: int | None = None) -> None:
     """Violet night overlay plus additive bioluminescent glow (never fully dark).
-    When view_rect is given, work is confined to that world-space area."""
-    darkness = clock.darkness()
+    When view_rect is given, work is confined to that world-space area.
+    darkness_override forces a light level (the mine is always dark)."""
+    darkness = clock.darkness() if darkness_override is None else darkness_override
     if darkness <= 0:
         return
     area = view_rect if view_rect is not None else surf.get_rect()
@@ -468,12 +548,16 @@ def draw_lighting(surf: pygame.Surface, world, flora, clock, ts: int, t: float,
     overlay.fill((*NIGHT_COLOR, darkness))
     surf.blit(overlay, area.topleft)
 
-    glow_strength = darkness / clock.max_darkness
+    glow_strength = min(1.0, darkness / clock.max_darkness)
     glows: list[tuple[int, int, tuple[int, int, int], int]] = []
     for x, y in world.find_kind("crystal"):
         glows.append((x, y, (60, 90, 160), ts * 2))
     for x, y in world.find_kind("great_crystal"):
         glows.append((x, y, (90, 120, 200), ts * 3))
+    for x, y in world.find_kind("cave_crystal"):
+        glows.append((x, y, (70, 110, 170), ts * 3))
+    for x, y in world.find_kind("mine_exit"):
+        glows.append((x, y, (120, 100, 60), ts * 2))
     for x, y, tile in world.iter_tiles():
         crop = tile.crop
         if crop and crop.ripe and "glow_when_ripe" in crop.d.get("traits", []):

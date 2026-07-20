@@ -11,8 +11,8 @@ import pygame  # noqa: E402
 import main as m  # noqa: E402
 
 # Keep tests off the real save file.
-m.load_game = lambda: None
-m.save_game = lambda state: None
+m.load_game = lambda *a: None
+m.save_game = lambda *a: None
 
 pygame.init()
 

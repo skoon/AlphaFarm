@@ -105,6 +105,18 @@ def load_assets(ts: int) -> bool:
         if "box" in species:
             sprites[f"flora:{species['name']}"] = _box(sheet, tuple(species["box"]), ts)
 
+    # living fauna, sliced from the creature sheet (cells scaled to ~0.8 tile)
+    creatures_path = ASSET_DIR / "SciFiCreatures_NES_4x30_alphaBG.png"
+    if creatures_path.exists():
+        csheet = pygame.image.load(str(creatures_path)).convert_alpha()
+        target_h = max(1, round(ts * 0.8))
+        for sid, species in load_json("fauna.json")["species"].items():
+            img = _box(csheet, tuple(species["box"]), ts)
+            if img.get_height() != target_h:
+                w = max(1, round(img.get_width() * target_h / img.get_height()))
+                img = pygame.transform.scale(img, (w, target_h))
+            sprites[f"fauna:{sid}"] = img
+
     # NPC robots (per npcs.json) and outpost buildings (per map.json)
     for npc_id, npc in load_json("npcs.json").items():
         path = ASSET_DIR / npc.get("sprite", "")

@@ -51,6 +51,9 @@ class UI:
         self.shop_tab_rects: dict[str, pygame.Rect] = {}
         self.upgrade_row_rects: list[pygame.Rect] = []
         self.kiln_row_rects: list[pygame.Rect] = []
+        self.restoration_row_rects: list[pygame.Rect] = []
+        self.pause_row_rects: list[pygame.Rect] = []
+        self.option_row_rects: list[pygame.Rect] = []
 
     def toast(self, text: str, ttl: float = 3.5) -> None:
         self.toasts.append([text, ttl])
@@ -307,7 +310,8 @@ class UI:
         y = self._text(surf, f"Total harvests:  {game.quests.total_harvests}", rect.x + 14, y)
         y += 10
         for line in wrap_text("Signal monitor: " + game.quests.hint(
-                len(game.flora.codex), game.world.avg_field_resonance()),
+                len(game.flora.codex) + len(game.fauna.codex),
+                game.world.avg_field_resonance()),
                 self.font, rect.w - 28):
             y = self._text(surf, line, rect.x + 14, y, ACCENT)
         y += 8
@@ -340,6 +344,25 @@ class UI:
                 y = self._text(surf, f"  Unlocked at the shipping pod: {name} seeds",
                                rect.x + 14, y, ACCENT, self.small)
             y += 4
+
+        fauna = game.fauna
+        done = fauna.set_complete()
+        documented = len(fauna.codex)
+        total = len(fauna.species)
+        title = f"{fauna.set_name} ({documented}/{total})" + \
+            ("  [COMPLETE]" if done else "")
+        y = self._text(surf, title, rect.x + 14, y, GOOD if done else TEXT)
+        for sid, sp in fauna.species.items():
+            if sid in fauna.codex:
+                y = self._text(surf, f"  {sp['name']}: {sp['entry']}",
+                               rect.x + 14, y, DIM, self.small)
+            else:
+                y = self._text(surf, "  ???", rect.x + 14, y, (90, 85, 110), self.small)
+        if done:
+            name = game.defs.get(fauna.reward_seed)["name"]
+            y = self._text(surf, f"  Reward: {fauna.reward_count}x {name} seeds",
+                           rect.x + 14, y, ACCENT, self.small)
+
         self._text(surf, "[C] close", rect.x + 14, rect.bottom - 24, DIM, self.small)
 
     def draw_journal(self, surf, game) -> None:
@@ -357,7 +380,8 @@ class UI:
                 y = self._text(surf, "  " + line, rect.x + 14, y, DIM)
             y += 2
         y += 6
-        hint = game.quests.hint(len(game.flora.codex), game.world.avg_field_resonance())
+        hint = game.quests.hint(len(game.flora.codex) + len(game.fauna.codex),
+                                game.world.avg_field_resonance())
         for line in wrap_text("Next: " + hint, self.font, rect.w - 28):
             y = self._text(surf, line, rect.x + 14, y, ACCENT)
         y += 6
@@ -434,6 +458,53 @@ class UI:
         self._text(surf, "[Enter/click] load  [Esc] close",
                    rect.x + 16, rect.bottom - 26, DIM, self.small)
 
+    @staticmethod
+    def _need_label(game, need_id: str) -> str:
+        if need_id == "mutated:any":
+            return "Moon-touched crops (any mutation)"
+        return game.defs.item_name(need_id)
+
+    def draw_restoration(self, surf, game) -> None:
+        self.restoration_row_rects = []
+        rect = pygame.Rect(self.w // 2 - 310, 44, 620, 430)
+        self._panel(surf, rect)
+        self._text(surf, "THE GREAT CRYSTAL — RESTORATION", rect.x + 16, rect.y + 10,
+                   ACCENT, self.big)
+        done = len(game.restoration.completed)
+        total = len(game.restoration.bundles)
+        self._text(surf, f"The planet asks, and remembers. ({done}/{total} offered)",
+                   rect.x + 16, rect.y + 36, DIM, self.small)
+        y = rect.y + 58
+        pending = game.restoration.available(game.quests.finished)
+        for i, bid in enumerate(pending):
+            b = game.restoration.bundles[bid]
+            status = game.restoration.needs_status(bid, game.inventory)
+            ready = all(have >= need for _, have, need in status)
+            row_h = 24 + 16 * len(status)
+            row_rect = pygame.Rect(rect.x + 10, y - 3, rect.w - 20, row_h)
+            self.restoration_row_rects.append(row_rect)
+            selected = i == game.restoration_index
+            if selected:
+                hl = pygame.Surface(row_rect.size, pygame.SRCALPHA)
+                hl.fill((255, 210, 120, 26))
+                surf.blit(hl, row_rect.topleft)
+            marker = "> " if selected else "  "
+            name_color = GOOD if ready else (ACCENT if selected else TEXT)
+            self._text(surf, marker + b["name"] + ("  — READY" if ready else ""),
+                       rect.x + 16, y, name_color)
+            yy = y + 18
+            for need_id, have, need in status:
+                col = GOOD if have >= need else DIM
+                self._text(surf, f"    {self._need_label(game, need_id)}: {have}/{need}",
+                           rect.x + 16, yy, col, self.small)
+                yy += 16
+            y += row_h + 6
+        for bid in game.restoration.completed:
+            y = self._text(surf, f"  * {game.restoration.bundles[bid]['name']} — offered",
+                           rect.x + 16, y, DIM, self.small)
+        self._text(surf, "[Enter/click] offer   [Esc] step away",
+                   rect.x + 16, rect.bottom - 24, DIM, self.small)
+
     def draw_day_summary(self, surf, game) -> None:
         s = game.day_summary
         if not s:
@@ -483,6 +554,61 @@ class UI:
         self._text(surf, "[E] rise and shine", rect.x + 18, rect.bottom - 26,
                    DIM, self.small)
 
+    def _dim_backdrop(self, surf) -> None:
+        dim = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
+        dim.fill((8, 4, 18, 150))
+        surf.blit(dim, (0, 0))
+
+    def draw_pause(self, surf, game) -> None:
+        from main import PAUSE_ROWS
+        self._dim_backdrop(surf)
+        self.pause_row_rects = []
+        rect = pygame.Rect(self.w // 2 - 130, self.h // 2 - 120, 260, 230)
+        self._panel(surf, rect)
+        y = self._text(surf, "PAUSED", rect.x + 16, rect.y + 12, ACCENT, self.big)
+        y += 8
+        for i, row in enumerate(PAUSE_ROWS):
+            row_rect = pygame.Rect(rect.x + 10, y - 2, rect.w - 20, 24)
+            self.pause_row_rects.append(row_rect)
+            selected = i == game.pause_index
+            marker = "> " if selected else "  "
+            y = self._text(surf, marker + row, rect.x + 16, y,
+                           ACCENT if selected else TEXT)
+            y += 6
+
+    def draw_options(self, surf, game) -> None:
+        import game.audio as audio
+        from main import OPTION_ROWS
+        self._dim_backdrop(surf)
+        self.option_row_rects = []
+        rect = pygame.Rect(self.w // 2 - 180, self.h // 2 - 110, 360, 210)
+        self._panel(surf, rect)
+        y = self._text(surf, "OPTIONS", rect.x + 16, rect.y + 12, ACCENT, self.big)
+        y += 8
+        volumes = dict(zip(("Master", "Music", "SFX"), audio.get_volumes()))
+        for i, row in enumerate(OPTION_ROWS):
+            row_rect = pygame.Rect(rect.x + 10, y - 2, rect.w - 20, 24)
+            self.option_row_rects.append(row_rect)
+            selected = i == game.option_index
+            marker = "> " if selected else "  "
+            color = ACCENT if selected else TEXT
+            if row in volumes:
+                pct = int(round(volumes[row] * 10)) * 10
+                self._text(surf, marker + f"{row:<8}", rect.x + 16, y, color)
+                bar = pygame.Rect(rect.x + 150, y + 3, 140, 10)
+                pygame.draw.rect(surf, (50, 45, 70), bar, border_radius=3)
+                pygame.draw.rect(surf, ACCENT if selected else DIM,
+                                 (bar.x, bar.y, int(bar.w * pct / 100), bar.h),
+                                 border_radius=3)
+                img = self.small.render(f"{pct}%", True, color)
+                surf.blit(img, (bar.right + 8, y + 1))
+                y += self.font.get_height() + 2
+            else:
+                y = self._text(surf, marker + row, rect.x + 16, y, color)
+            y += 8
+        self._text(surf, "[A/D or arrows] adjust   [Esc] back",
+                   rect.x + 16, rect.bottom - 24, DIM, self.small)
+
     def draw_help(self, surf) -> None:
         rect = pygame.Rect(self.w // 2 - 290, 40, 580, 430)
         self._panel(surf, rect)
@@ -503,7 +629,7 @@ class UI:
             ("I / C / J", "Inventory / Flora Codex / Journal"),
             ("F5", "Quick-save"),
             ("F1", "Debug overlay ([T] +1 hour, [N] next day)"),
-            ("Esc", "Close panel / quit"),
+            ("Esc", "Close panel / pause menu"),
         ]
         key_w = max(self.font.size(k)[0] for k, _ in entries) + 18
         for key_label, desc in entries:

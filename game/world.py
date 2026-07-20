@@ -8,13 +8,18 @@ from game.config import load_json
 from game.crops import Crop, CropDefs
 
 SOLID_KINDS = {"rock", "crystal", "great_crystal", "habitat_wall", "terminal",
-               "shipping_pod", "building"}
-INTERACT_KINDS = {"habitat_door", "terminal", "shipping_pod", "great_crystal"}
+               "shipping_pod", "building", "mine_entrance", "cave_wall",
+               "cave_crystal", "ore_ferrite", "ore_lumite", "ore_quartz"}
+INTERACT_KINDS = {"habitat_door", "terminal", "shipping_pod", "great_crystal",
+                  "mine_entrance", "mine_exit"}
+ORE_PREFIX = "ore_"
 
 
 class Tile:
     def __init__(self, kind: str, resonance: float):
         self.kind = kind
+        self.base_kind = kind          # from the map; kind can change (ore -> floor)
+        self.hp: int | None = None     # ore hit points
         self.tilled = False
         self.watered = False           # visual wet-soil flag, cleared nightly
         self.crop: Crop | None = None
@@ -31,7 +36,7 @@ class Tile:
         return self.kind == "soil" and not self.tilled
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        d: dict[str, Any] = {
             "tilled": self.tilled,
             "watered": self.watered,
             "crop": self.crop.to_dict() if self.crop else None,
@@ -39,6 +44,11 @@ class Tile:
             "last_family": self.last_family,
             "gear": self.gear,
         }
+        if self.kind != self.base_kind:
+            d["kind"] = self.kind
+        if self.hp is not None:
+            d["hp"] = self.hp
+        return d
 
     def apply_dict(self, d: dict[str, Any], defs: CropDefs) -> None:
         self.tilled = d["tilled"]
@@ -47,14 +57,19 @@ class Tile:
         self.resonance = d["resonance"]
         self.last_family = d["last_family"]
         self.gear = d.get("gear")
+        if "kind" in d:
+            self.kind = d["kind"]
+        if "hp" in d:
+            self.hp = d["hp"]
 
 
 class World:
     def __init__(self, cfg: dict[str, Any], defs: CropDefs,
-                 map_data: dict[str, Any] | None = None):
+                 map_data: dict[str, Any] | None = None, map_name: str = "map"):
         self.cfg = cfg
         self.defs = defs
-        m = map_data if map_data is not None else load_json("map.json")
+        self.map_name = map_name
+        m = map_data if map_data is not None else load_json(f"{map_name}.json")
         self.width: int = m["width"]
         self.height: int = m["height"]
         self.legend: dict[str, str] = m["legend"]
@@ -67,6 +82,9 @@ class World:
         self.tiles: list[list[Tile]] = [
             [Tile(self.legend[ch], r0) for ch in row] for row in rows
         ]
+        for _, _, t in self.iter_tiles():
+            if t.kind.startswith(ORE_PREFIX):
+                t.hp = defs.minerals[t.kind[len(ORE_PREFIX):]]["hp"]
 
     def tile(self, x: int, y: int) -> Tile | None:
         if 0 <= x < self.width and 0 <= y < self.height:
@@ -138,6 +156,33 @@ class World:
         t.crop = None
         return item, qty
 
+    # ---- mining ----------------------------------------------------------
+
+    def mine_ore(self, x: int, y: int, rng: random.Random) -> tuple[str, int] | None:
+        """Strike an ore tile. Returns (mineral_id, qty) when it breaks, else None."""
+        t = self.tile(x, y)
+        if t is None or not t.kind.startswith(ORE_PREFIX) or t.hp is None:
+            return None
+        t.hp -= 1
+        if t.hp > 0:
+            return None
+        mineral = t.kind[len(ORE_PREFIX):]
+        lo, hi = self.defs.minerals[mineral]["drops"]
+        t.kind = "cave_floor"
+        t.hp = None
+        return mineral, rng.randint(lo, hi)
+
+    def regen_ores(self, rng: random.Random, chance: float) -> int:
+        """Broken seams slowly regrow overnight."""
+        regrown = 0
+        for _, _, t in self.iter_tiles():
+            if t.base_kind.startswith(ORE_PREFIX) and t.kind == "cave_floor" \
+                    and rng.random() < chance:
+                t.kind = t.base_kind
+                t.hp = self.defs.minerals[t.base_kind[len(ORE_PREFIX):]]["hp"]
+                regrown += 1
+        return regrown
+
     # ---- placeable gear --------------------------------------------------
 
     def building_at(self, x: int, y: int) -> dict[str, Any] | None:
@@ -184,7 +229,8 @@ class World:
 
     # ---- daily tick ------------------------------------------------------
 
-    def end_of_day(self, moons, day: int, aurora_mult: float, rng: random.Random) -> None:
+    def end_of_day(self, moons, day: int, aurora_mult: float, rng: random.Random,
+                   recovery_mult: float = 1.0) -> None:
         rc = self.cfg["resonance"]
         for _, _, t in self.iter_tiles():
             if t.crop:
@@ -193,7 +239,7 @@ class World:
             elif t.kind == "soil":
                 # fallow ground slowly settles back toward its baseline
                 base = rc["start"]
-                step = rc["fallow_recovery_per_day"]
+                step = rc["fallow_recovery_per_day"] * recovery_mult
                 if t.resonance < base:
                     t.resonance = min(base, t.resonance + step)
                 elif t.resonance > base:
@@ -209,7 +255,11 @@ class World:
     def to_dict(self) -> dict[str, Any]:
         changed = {}
         for x, y, t in self.iter_tiles():
-            if t.kind != "soil" and t.crop is None and t.gear is None:
+            damaged_ore = t.kind != t.base_kind or (
+                t.hp is not None and
+                t.hp != self.defs.minerals[t.kind[len(ORE_PREFIX):]]["hp"])
+            if t.kind != "soil" and t.crop is None and t.gear is None \
+                    and not damaged_ore:
                 continue
             changed[f"{x},{y}"] = t.to_dict()
         return {"tiles": changed}

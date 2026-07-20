@@ -1,0 +1,34 @@
+{
+  "bundles": {
+    "first_fruits": {
+      "name": "The First Fruits",
+      "needs": { "crop:lumen_berry": 8, "crop:whisper_wheat": 5, "crop:crimson_tuber": 5 },
+      "buff": { "type": "energy_max", "value": 10 },
+      "text": "The offerings sink into the crystal like rain into thirsty ground. YOU CARRY MUCH, the voice says. LET US CARRY SOME. Your shoulders feel lighter — permanently."
+    },
+    "deep_gifts": {
+      "name": "Gifts from the Deep",
+      "needs": { "mineral:ferrite": 6, "mineral:lumite": 4, "mineral:quartz": 2 },
+      "buff": { "type": "soil_recovery", "value": 3.0 },
+      "text": "The minerals dissolve into veins of light that race outward under your field. THE BONES REMEMBER THE FLESH, the voice hums. Your fallow soil will heal three times as fast."
+    },
+    "artisans_offering": {
+      "name": "The Artisan's Offering",
+      "needs": { "good:lumen_berry": 2, "good:gravity_melon": 1, "good:prism_pod": 1 },
+      "buff": { "type": "sell_bonus", "value": 0.05 },
+      "text": "The crystal turns your crafted things over, marveling. YOU RESHAPE US GENTLY, it says, AND SO ARE RESHAPED. Off-world buyers will pay 5% more for everything you ship."
+    },
+    "moonlit_harvest": {
+      "name": "The Moonlit Harvest",
+      "needs": { "mutated:any": 4 },
+      "buff": { "type": "growth_rate", "value": 0.15 },
+      "text": "The moon-touched crops rise and orbit the crystal like tiny satellites. ILO AND VESK SEE YOU, the voice says warmly. Everything you plant will grow 15% faster."
+    },
+    "worlds_bloom": {
+      "name": "The World's Bloom",
+      "needs": { "crop:dream_lotus": 3, "crop:echo_bloom": 2, "crop:duskcap": 2 },
+      "buff": { "type": "aurora_weight", "value": 12 },
+      "text": "The lotuses open all at once. For a heartbeat every furrow on Veridia glows in answer. WE ARE AWAKE, the voice sings, AND WE ARE GLAD IT WAS YOU. The auroras will come more often now — the planet, dreaming louder."
+    }
+  }
+}

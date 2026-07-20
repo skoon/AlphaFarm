@@ -69,13 +69,15 @@ glibc version and newer.
 | F5 | Quick-save |
 | F1 | Debug overlay (tile resonance, moon phases, FPS) |
 | T / N | (debug only) skip +1 hour / skip to next day |
-| Esc | Close panel / quit |
+| Esc | Close panel / pause menu (Options, Save, Quit to Title) |
 
 ## The loop
 
 Till → plant → water → wait → harvest. Ship crops from the pod on the landing pad; it pays out
 in credits overnight and sells seeds. Sleep at the habitat door to start the next day (autosaves
-to `saves/savegame.json`). Energy drains with tool use — collapse at 02:00 and you wake up rough.
+to your slot in `saves/`; the title screen offers three save slots, and an old
+`savegame.json` migrates to slot 1 automatically). Energy drains with tool use — collapse at
+02:00 and you wake up rough.
 
 Spend your credits at **Tinks' SHOP** (interact with its door at the outpost): Mk-II hoe and
 canister work 3-tile rows, a Pack Expansion adds 12 inventory slots, Irrigation Drones water
@@ -87,6 +89,22 @@ placed gear back up.
 **Crops:** Lumen Berries (3d, glow at night when ripe), Gravity Melons (7d, float), Whisper Wheat
 (5d, sways with no wind), Crimson Tubers (4d, underground — watch for the soil bulge), Prism Pods
 (10d, high value, must be watered *exactly once* per day or they wilt).
+
+## The mine
+
+A cave mouth at Hux's dig site (western rocks) leads underground. Swing the hoe at glowing ore
+seams — ferrite near the entrance, lumite deeper, void quartz in the dark heart of the ridge.
+Ore has hit points, costs energy to break, and regrows slowly overnight. Minerals ship through
+the pod like crops (befriend Hux for +20% mineral prices). The mine is lit only by cave
+crystals; you're sheltered from ion storms down there, but collapse at 02:00 and CARE-7 still
+has to haul you home.
+
+## Endgame: Restoration
+
+Finish The Dreaming Ground questline and the great crystal begins accepting offerings — five
+bundles of crops, minerals, artisan goods, and moon-touched mutations. Each grants a permanent
+planet-wide gift: more energy, faster-healing soil, better prices, faster growth, more auroras.
+Offer all five to wake Veridia fully.
 
 ## Alien systems
 
@@ -100,6 +118,8 @@ placed gear back up.
   habitat terminal.
 - **Flora scanning.** Scan wild plants (tool 4) into the codex (C). Completing a codex set
   unlocks new seeds at the shipping pod.
+- **Veridian fauna.** Eight skittish critters roam the farm at night and the mine at all hours.
+  Scan them before they dart away — completing the fauna codex set earns Dream Lotus seeds.
 
 ## The outpost
 

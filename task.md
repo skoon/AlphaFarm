@@ -95,10 +95,21 @@
 - [x] Phase C tests/smoke/screenshots green (145 tests; shop/farm/kiln shots)
 
 ### Phase D — Mine, endgame, QoL
-- [ ] D1 Mine map, minerals, fauna codex set (creatures sheet)
-- [ ] D2 Restoration bundles + ending
-- [ ] D3 Pause menu, options, save slots, title screen
-- [ ] Phase D tests/smoke green
+- [x] D1a Multi-map + the mine: data/mine.json cave at Hux's dig site, ore seams
+      (ferrite/lumite/quartz, HP + overnight regen), hoe-mining, always-dark
+      lighting, minerals ship via the bin, Hux 4h perk +20% mineral prices,
+      collapse underground wakes you at the habitat
+- [x] D1b Fauna (Opus subagent): 8 critters from the creatures sheet, farm-night +
+      mine habitats, skittish wander, scanner documents into "Veridian Fauna"
+      codex set, completion rewards Dream Lotus seeds, counts toward quest gates
+- [x] D2 Restoration endgame: 5 offering bundles at the great crystal ->
+      permanent buffs (energy/soil recovery/sell bonus/growth/auroras) + ending
+- [x] D3 Pause menu (Esc: Resume/Options/Save/Quit-to-Title/Quit), volume options
+      persisted to saves/settings.json, three save slots + legacy migration,
+      title screen with slot picker and starfield (subagent hit the session
+      limit before starting; implemented directly)
+- [x] Phase D tests/smoke/screenshots green (174 tests; mine/fauna/restoration/
+      pause shots; windowed title-screen launch)
 
 ## Post-phase backlog (Scott, 2026-07-19)
 - [ ] BUG: player can walk through NPCs (no player-vs-NPC collision; add soft

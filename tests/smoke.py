@@ -13,8 +13,8 @@ import pygame  # noqa: E402
 import main as m  # noqa: E402
 
 # Keep the smoke run off the real save file.
-m.load_game = lambda: None
-m.save_game = lambda state: None
+m.load_game = lambda *a: None
+m.save_game = lambda *a: None
 
 pygame.init()
 game = m.Game()
@@ -65,8 +65,45 @@ game.run(max_frames=30)
 
 state = game.gather_state()
 assert set(state) == {"clock", "player", "inventory", "shipping_bin", "world",
-                      "events", "flora", "npcs", "quests", "favors"}
+                      "mine_world", "map_id", "events", "flora", "fauna", "npcs",
+                      "quests", "favors", "restoration"}
+
+# descend into the mine, render it, and come back up
+ex, ey = game.worlds["farm"].find_kind("mine_entrance")[0]
+game.player.x, game.player.y = float(ex), float(ey + 1)
+game.player.facing = (0, -1)
+if game.mode != "play":
+    key(pygame.K_e)
+game.interact()
+assert game.map_id == "mine", f"expected mine, got {game.map_id}"
+game.run(max_frames=30)               # render the dark cave (fauna wander here)
+
+# fauna: place a mine critter in front of the player and document it (no crash)
+mine_sid = next(s for s, v in game.fauna.species.items() if v["habitat"] == "mine")
+game.player.facing = (1, 0)
+ftx, fty = game.player.target_tile()
+game.fauna.critters.append({"species": mine_sid, "map": "mine", "x": ftx + 0.5,
+                            "y": fty + 0.5, "vx": 0.0, "vy": 0.0, "shy_t": 0.0})
+game.player.energy = game.player.max_energy
+key(pygame.K_4)                       # switch to the scanner
+key(pygame.K_SPACE)                   # document the critter
+game.run(max_frames=5)
+
+game.player.tool = "hoe"
+key(pygame.K_SPACE)                   # swing at whatever is faced
+exit_x, exit_y = game.worlds["mine"].find_kind("mine_exit")[0]
+game.player.x, game.player.y = float(exit_x), float(exit_y)
+game.interact()
+assert game.map_id == "farm"
+game.run(max_frames=15)
+
+# pause menu round trip
+key(pygame.K_ESCAPE)
+assert game.mode == "pause", f"expected pause, got {game.mode}"
+game.run(max_frames=10)               # render the pause panel
+key(pygame.K_ESCAPE)
+assert game.mode == "play"
 
 pygame.quit()
-print(f"SMOKE OK — reached day {game.clock.day}, "
+print(f"SMOKE OK - reached day {game.clock.day}, "
       f"energy {game.player.energy:.0f}, mode {game.mode}")

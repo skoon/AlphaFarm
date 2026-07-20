@@ -31,3 +31,32 @@ def load_game(path: Path = SAVE_PATH) -> dict[str, Any] | None:
 
 def save_exists(path: Path = SAVE_PATH) -> bool:
     return path.exists()
+
+
+# ---- save slots -----------------------------------------------------------
+
+SLOT_COUNT = 3
+
+
+def slot_path(n: int) -> Path:
+    return SAVE_DIR / f"slot_{n}.json"
+
+
+def slot_summary(n: int) -> dict[str, Any] | None:
+    """Peek a slot for the title screen. None if empty or unreadable."""
+    p = slot_path(n)
+    if not p.exists():
+        return None
+    try:
+        with open(p, encoding="utf-8") as f:
+            data = json.load(f)
+        return {"day": data["clock"]["day"], "credits": data["player"]["credits"]}
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
+def migrate_legacy() -> None:
+    """Move the old single savegame.json into slot 1, once."""
+    if SAVE_PATH.exists() and not slot_path(1).exists():
+        SAVE_DIR.mkdir(parents=True, exist_ok=True)
+        SAVE_PATH.replace(slot_path(1))

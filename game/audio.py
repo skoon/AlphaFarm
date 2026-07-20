@@ -15,9 +15,13 @@ Wired by main.py roughly as:
 """
 from __future__ import annotations
 
+import json
+
 import pygame
 
-from game.config import ASSET_DIR
+from game.config import ASSET_DIR, SAVE_DIR
+
+SETTINGS_PATH = SAVE_DIR / "settings.json"
 
 # Base names loaded from assets/audio/<name>.wav.
 _SFX_NAMES = (
@@ -57,6 +61,14 @@ def init(cfg: dict) -> bool:
     _master = float(audio_cfg.get("master_volume", 1.0))
     _music_vol = float(audio_cfg.get("music_volume", 1.0))
     _sfx_vol = float(audio_cfg.get("sfx_volume", 1.0))
+    try:                                # user settings override config defaults
+        with open(SETTINGS_PATH, encoding="utf-8") as f:
+            saved = json.load(f)
+        _master = float(saved.get("master_volume", _master))
+        _music_vol = float(saved.get("music_volume", _music_vol))
+        _sfx_vol = float(saved.get("sfx_volume", _sfx_vol))
+    except (OSError, ValueError):
+        pass
 
     try:
         if pygame.mixer.get_init() is None:
@@ -111,6 +123,42 @@ def set_weather(name: str | None) -> None:
     """Loop the named weather track on the weather channel (None stops it)."""
     global _weather_name
     _weather_name = _set_loop(_weather_channel, _weather_name, name)
+
+
+def get_volumes() -> tuple[float, float, float]:
+    return _master, _music_vol, _sfx_vol
+
+
+def set_volumes(master: float | None = None, music: float | None = None,
+                sfx: float | None = None) -> None:
+    """Update volumes (0..1), apply to live loops, and persist to settings.json.
+    Works even when the mixer is disabled (volumes still stick for later)."""
+    global _master, _music_vol, _sfx_vol
+
+    def clamp(v: float) -> float:
+        return max(0.0, min(1.0, v))
+
+    if master is not None:
+        _master = clamp(master)
+    if music is not None:
+        _music_vol = clamp(music)
+    if sfx is not None:
+        _sfx_vol = clamp(sfx)
+    if _enabled:
+        try:
+            for name in (_ambient_name, _weather_name):
+                snd = _sounds.get(name) if name else None
+                if snd is not None:
+                    snd.set_volume(_master * _music_vol)
+        except pygame.error:
+            pass
+    try:
+        SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(SETTINGS_PATH, "w", encoding="utf-8") as f:
+            json.dump({"master_volume": _master, "music_volume": _music_vol,
+                       "sfx_volume": _sfx_vol}, f)
+    except OSError:
+        pass
 
 
 def shutdown() -> None:
